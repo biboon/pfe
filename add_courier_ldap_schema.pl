@@ -19,4 +19,3 @@ print "Add ,cn=schema,cn=config to first line\n";
 print "Remove the 7 last lines\n";
 print "Run then: ldapadd -Y EXTERNAL -H ldapi:// -f /tmp/ldapConfig/cn=config/cn=schema/cn={4}authldap.ldif\n";
 print "Check with: ldapsearch -Y EXTERNAL -H ldapi:// -b \"cn=schema,cn=config\" -LLL \"(objectClass=*)\" cn\n";
-

@@ -1,0 +1,6 @@
+dn: dc=mail,dc=airslip,dc=xyz
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: mail
+dc: mail
