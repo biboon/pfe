@@ -39,8 +39,8 @@ my $filename = $folder."/new_entry.ldif";
 if ( !-d $folder ) { mkdir $folder or die "Error creating directory: $folder"; }
 open(my $fd, '>', $filename);
 
-print $fd "dn:cn=$username,dc=mail,dc=$domain,dc=$tld\n";
-print $fd "cn:$username\n";
+print $fd "dn:cn=$username,dc=mailAccount,dc=mail,dc=$domain,dc=$tld\n";
+print $fd "uid:$username\n";
 print $fd "mail:$mailadd\n";
 print $fd "sn: $name\n";
 print $fd "givenName: $firstname\n";
@@ -54,4 +54,5 @@ print $fd "userPassword: $hash\n";
 
 close $fd;
 
-system("ldapadd -D \"cn=admin,dc=airslip,dc=xyz\" -W -h localhost -f $filename");
+system("ldapadd -D \"cn=admin,dc=$domain,dc=$tld\" -W -h localhost -f $filename");
+#unlink $filename;

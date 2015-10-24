@@ -14,7 +14,7 @@ my $conffile = $ldapconffolder."schema_include.conf";
 system("slaptest -f $conffile -F $ldapconffolder");
 system ("ls -l $ldapconffolder");
 
-print "\nYou can now edit file $ldapconffolder\.cn=config/cn=schema/cn={*}authldap.ldif\n";
+print "\nYou can now edit file: vi $ldapconffolder\cn=config/cn=schema/cn={*}authldap.ldif\n";
 print "Add ,cn=schema,cn=config to first line\n";
 print "Remove the 7 last lines\n";
 print "Run then: ldapadd -Y EXTERNAL -H ldapi:// -f /tmp/ldapConfig/cn=config/cn=schema/cn={4}authldap.ldif\n";

@@ -1,6 +1,35 @@
-dn: dc=mail,dc=airslip,dc=xyz
-objectClass: top
+dn: dc=mail,dc=intimail,dc=pw
+o: intimail.pw
+description: Global mail tree
+dc: mail
 objectClass: dcObject
 objectClass: organization
-o: mail
-dc: mail
+
+dn: dc=mailAccount,dc=mail,dc=intimail,dc=pw
+description: All mail accounts
+o: mailAccount
+dc: mailAccount
+objectClass: dcObject
+objectClass: organization
+
+dn: dc=mailAlias,dc=mail,dc=intimail,dc=pw
+description: All mail aliases
+o: mailAlias
+dc: mailAlias
+objectClass: dcObject
+objectClass: organization
+
+dn: dc=users,dc=mailAccount,dc=mail,dc=intimail,dc=pw
+description: Normal users
+o: users
+dc: users
+objectClass: dcObject
+objectClass: organization
+
+dn: dc=administrators,dc=mailAccount,dc=mail,dc=intimail,dc=pw
+description: Users with administrator privileges
+o: administrators
+dc: administrators
+objectClass: dcObject
+objectClass: organization
+

@@ -1,5 +1,5 @@
-dn:cn=rlibaert,dc=mail,dc=airslip,dc=xyz
-cn:rlibaert
+dn:cn=rlibaert,dc=mailAccount,dc=mail,dc=airslip,dc=xyz
+uid:rlibaert
 mail:rlibaert@airslip.xyz
 sn: Libaert
 givenName: Romain
@@ -9,5 +9,5 @@ homeDirectory: /home/vmail/
 objectClass: top
 objectClass: inetOrgPerson
 objectClass: CourierMailAccount
-userPassword: {SSHA}WgKbKvGg9s9bb4Yiaevc/diLe69fNtQf
+userPassword: {SSHA}Cou4trw7FI46uPWk1FFmQPEyGSI4mdQg
 

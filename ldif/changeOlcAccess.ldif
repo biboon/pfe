@@ -3,11 +3,11 @@ changetype: modify
 delete: olcAccess
 -
 add: olcAccess
-olcAccess: {0}to attrs=userPassword,shadowLastChange by self write by anonymous auth by dn="cn=admin,dc=airslip,dc=xyz" write by * none
+olcAccess: {0}to attrs=userPassword,shadowLastChange by self write by anonymous auth by dn="cn=admin,dc=intimail,dc=pw" write by * none
 -
 add: olcAccess
 olcAccess: {1}to dn.base="" by * read
 -
 add: olcAccess
-olcAccess: {2}to * by self write by dn="cn=admin,dc=airslip,dc=xyz" write by * none
+olcAccess: {2}to * by self write by dn="cn=admin,dc=intimail,dc=pw" write by * none
 -
