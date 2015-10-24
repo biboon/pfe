@@ -39,9 +39,9 @@ my $filename = $folder."/new_entry.ldif";
 if ( !-d $folder ) { mkdir $folder or die "Error creating directory: $folder"; }
 open(my $fd, '>', $filename);
 
-print $fd "dn:cn=$username,dc=mailAccount,dc=mail,dc=$domain,dc=$tld\n";
-print $fd "uid:$username\n";
-print $fd "mail:$mailadd\n";
+print $fd "dn: cn=$username,dc=users,dc=mailAccount,dc=mail,dc=$domain,dc=$tld\n";
+print $fd "uid: $username\n";
+print $fd "mail: $mailadd\n";
 print $fd "sn: $name\n";
 print $fd "givenName: $firstname\n";
 print $fd "displayName: $firstname $name\n";
