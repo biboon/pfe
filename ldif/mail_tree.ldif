@@ -5,31 +5,17 @@ dc: mail
 objectClass: dcObject
 objectClass: organization
 
-dn: dc=mailAccount,dc=mail,dc=intimail,dc=pw
-description: All mail accounts
-o: mailAccount
-dc: mailAccount
+dn: dc=people,dc=mail,dc=intimail,dc=pw
+description: Informations of all users
+o: people
+dc: people
 objectClass: dcObject
 objectClass: organization
 
-dn: dc=mailAlias,dc=mail,dc=intimail,dc=pw
-description: All mail aliases
-o: mailAlias
-dc: mailAlias
-objectClass: dcObject
-objectClass: organization
-
-dn: dc=users,dc=mailAccount,dc=mail,dc=intimail,dc=pw
-description: Normal users
-o: users
-dc: users
-objectClass: dcObject
-objectClass: organization
-
-dn: dc=administrators,dc=mailAccount,dc=mail,dc=intimail,dc=pw
-description: Users with administrator privileges
-o: administrators
-dc: administrators
+dn: dc=groups,dc=mail,dc=intimail,dc=pw
+description: All groups of users
+o: groups
+dc: groups
 objectClass: dcObject
 objectClass: organization
 

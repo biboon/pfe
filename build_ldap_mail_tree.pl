@@ -23,31 +23,17 @@ print $fd "dc: mail\n";
 print $fd "objectClass: dcObject\n";
 print $fd "objectClass: organization\n\n";
 
-print $fd "dn: dc=mailAccount,dc=mail,dc=$domain,dc=$tld\n";
-print $fd "description: All mail accounts\n";
-print $fd "o: mailAccount\n";
-print $fd "dc: mailAccount\n";
+print $fd "dn: dc=people,dc=mail,dc=$domain,dc=$tld\n";
+print $fd "description: Informations of all users\n";
+print $fd "o: people\n";
+print $fd "dc: people\n";
 print $fd "objectClass: dcObject\n";
 print $fd "objectClass: organization\n\n";
 
-print $fd "dn: dc=mailAlias,dc=mail,dc=$domain,dc=$tld\n";
-print $fd "description: All mail aliases\n";
-print $fd "o: mailAlias\n";
-print $fd "dc: mailAlias\n";
-print $fd "objectClass: dcObject\n";
-print $fd "objectClass: organization\n\n";
-
-print $fd "dn: dc=users,dc=mailAccount,dc=mail,dc=$domain,dc=$tld\n";
-print $fd "description: Normal users\n";
-print $fd "o: users\n";
-print $fd "dc: users\n";
-print $fd "objectClass: dcObject\n";
-print $fd "objectClass: organization\n\n";
-
-print $fd "dn: dc=administrators,dc=mailAccount,dc=mail,dc=$domain,dc=$tld\n";
-print $fd "description: Users with administrator privileges\n";
-print $fd "o: administrators\n";
-print $fd "dc: administrators\n";
+print $fd "dn: dc=groups,dc=mail,dc=$domain,dc=$tld\n";
+print $fd "description: All groups of users\n";
+print $fd "o: groups\n";
+print $fd "dc: groups\n";
 print $fd "objectClass: dcObject\n";
 print $fd "objectClass: organization\n\n";
 
