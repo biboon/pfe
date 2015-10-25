@@ -20,6 +20,7 @@ print $fd "dn: dc=mail,dc=$domain,dc=$tld\n";
 print $fd "o: intimail.pw\n";
 print $fd "description: Global mail tree\n";
 print $fd "dc: mail\n";
+print $fd "objectClass: top\n";
 print $fd "objectClass: dcObject\n";
 print $fd "objectClass: organization\n\n";
 
@@ -27,6 +28,7 @@ print $fd "dn: dc=people,dc=mail,dc=$domain,dc=$tld\n";
 print $fd "description: Informations of all users\n";
 print $fd "o: people\n";
 print $fd "dc: people\n";
+print $fd "objectClass: top\n";
 print $fd "objectClass: dcObject\n";
 print $fd "objectClass: organization\n\n";
 
@@ -34,6 +36,7 @@ print $fd "dn: dc=groups,dc=mail,dc=$domain,dc=$tld\n";
 print $fd "description: All groups of users\n";
 print $fd "o: groups\n";
 print $fd "dc: groups\n";
+print $fd "objectClass: top\n";
 print $fd "objectClass: dcObject\n";
 print $fd "objectClass: organization\n\n";
 

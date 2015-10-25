@@ -2,6 +2,7 @@ dn: dc=mail,dc=intimail,dc=pw
 o: intimail.pw
 description: Global mail tree
 dc: mail
+objectClass: top
 objectClass: dcObject
 objectClass: organization
 
@@ -9,6 +10,7 @@ dn: dc=people,dc=mail,dc=intimail,dc=pw
 description: Informations of all users
 o: people
 dc: people
+objectClass: top
 objectClass: dcObject
 objectClass: organization
 
@@ -16,6 +18,7 @@ dn: dc=groups,dc=mail,dc=intimail,dc=pw
 description: All groups of users
 o: groups
 dc: groups
+objectClass: top
 objectClass: dcObject
 objectClass: organization
 
