@@ -1,64 +1,93 @@
 #!/bin/sh
 
-# Vider les tables actuelles
-iptables -t filter -F
+# -t filter is default so no need
+# more info on iptables on http://www.thegeekstuff.com/2011/06/iptables-rules-examples/
 
-# Vider les règles personnelles
-iptables -t filter -X
+# Last Revision
+echo '=== Mur de Feu Ruleset v1.0 stable, Rev 20151026.05 ===\n'
 
-# Interdire toute connexion entrante et sortante
-iptables -t filter -P INPUT DROP
-iptables -t filter -P FORWARD DROP
-iptables -t filter -P OUTPUT DROP
+SSH_PORT=22
+HTTP_PORT=80
+HTTPS_PORT=443
+DNS_PORT=53
+NTP_PORT=123
+SMTP_PORT=25
+POP3_PORT=110
+IMAP_PORT=143
+LDAP_PORT=389
 
-# ---
+
+
+echo "Press any key to write Ruleset..."
+read key
+
+
+# Nettoyage des règles
+echo 'Cleaning up rules and clearing firewall...'
+iptables -F
+iptables -X
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+
+# Rejet de toutes les connexions par défaut
+echo 'Dropping all incoming traffic...'
+iptables -P INPUT DROP
 
 # Ne pas casser les connexions etablies
+echo 'Maintaining already established connections...'
 iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 iptables -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
-# Autoriser loopback
-iptables -t filter -A INPUT -i lo -j ACCEPT
-iptables -t filter -A OUTPUT -o lo -j ACCEPT
+# Autoriser le loopback
+echo 'Allowing loopback interface...\n'
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
+
+# Début du filtrage des ports
+echo 'Filtering ports...'
 
 # ICMP (Ping)
-iptables -t filter -A INPUT -p icmp -j ACCEPT
-iptables -t filter -A OUTPUT -p icmp -j ACCEPT
+echo 'Allowing ICMP...'
+iptables -A INPUT -i eth0 -p icmp -j ACCEPT
 
-# ---
+# SSH (incoming)
+echo 'Allowing incoming SSH connections ('$SSH_PORT')...'
+iptables -A INPUT -i eth0 -p tcp --dport $SSH_PORT -m state --state NEW,ESTABLISHED -j ACCEPT
 
-# SSH In
-iptables -t filter -A INPUT -p tcp --dport 22 -j ACCEPT
+# HTTP + HTTPS
+echo 'Allowing incoming HTTP and HTTPS traffic ('$HTTP_PORT','$HTTPS_PORT')...'
+iptables -A INPUT -i eth0 -p tcp --dport $HTTP_PORT -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A INPUT -i eth0 -p tcp --dport $HTTPS_PORT -m state --state NEW,ESTABLISHED -j ACCEPT
 
-# SSH Out
-iptables -t filter -A OUTPUT -p tcp --dport 22 -j ACCEPT
+# DNS
+echo 'Allowing incoming DNS connections ('$DNS_PORT')...'
+iptables -A INPUT -i eth0 -p tcp --dport $DNS_PORT -m state --state NEW,ESTABLISHED -j ACCEPT
+iptables -A INPUT -i eth0 -p udp --dport $DNS_PORT -m state --state NEW,ESTABLISHED -j ACCEPT
 
-# DNS In/Out
-iptables -t filter -A OUTPUT -p tcp --dport 53 -j ACCEPT
-iptables -t filter -A OUTPUT -p udp --dport 53 -j ACCEPT
-iptables -t filter -A INPUT -p tcp --dport 53 -j ACCEPT
-iptables -t filter -A INPUT -p udp --dport 53 -j ACCEPT
+# NTP
+echo 'Allowing NTP connections ('$NTP_PORT')...'
+iptables -A INPUT -i eth0 -p udp --dport $NTP_PORT  -m state --state NEW,ESTABLISHED -j ACCEPT
 
-# NTP Out
-iptables -t filter -A OUTPUT -p udp --dport 123 -j ACCEPT
+# SMTP
+echo 'Allowing SMTP connexions ('$SMTP_PORT')...'
+iptables -t filter -A INPUT -p tcp --dport $SMTP_PORT -j ACCEPT
 
-# HTTP + HTTPS Out
-iptables -t filter -A OUTPUT -p tcp --dport 80 -j ACCEPT
-iptables -t filter -A OUTPUT -p tcp --dport 443 -j ACCEPT
+# POP3
+echo 'Allowing POP3 connexions ('$POP3_PORT')...'
+iptables -t filter -A INPUT -p tcp --dport $POP3_PORT -j ACCEPT
 
-# HTTP + HTTPS In
-iptables -t filter -A INPUT -p tcp --dport 80 -j ACCEPT
-iptables -t filter -A INPUT -p tcp --dport 443 -j ACCEPT
-iptables -t filter -A INPUT -p tcp --dport 8443 -j ACCEPT
+# IMAP
+echo 'Allowing IMAP connexions ('$IMAP_PORT')...'
+iptables -t filter -A INPUT -p tcp --dport $IMAP_PORT -j ACCEPT
 
-# Mail SMTP:25
-iptables -t filter -A INPUT -p tcp --dport 25 -j ACCEPT
-iptables -t filter -A OUTPUT -p tcp --dport 25 -j ACCEPT
+# LDAP
+echo 'Allowing LDAP connection only from localhost ('$LDAP_PORT')...\n'
+iptables -A INPUT -p tcp --dport $LDAP_PORT -s localhost -j ACCEPT
+iptables -A INPUT -p tcp --dport $LDAP_PORT -j DROP
 
-# Mail POP3:110
-iptables -t filter -A INPUT -p tcp --dport 110 -j ACCEPT
-iptables -t filter -A OUTPUT -p tcp --dport 110 -j ACCEPT
+# DDOS Protection
+echo 'Enforcing DDOS Protection...\n'
+iptables -A INPUT -p tcp --dport $HTTP_PORT -m limit --limit 25/minute --limit-burst 100 -j ACCEPT
 
-# Mail IMAP:143
-iptables -t filter -A INPUT -p tcp --dport 143 -j ACCEPT
-iptables -t filter -A OUTPUT -p tcp --dport 143 -j ACCEPT
+echo 'All done ! Press any key to quit...'
+read key
