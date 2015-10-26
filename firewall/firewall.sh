@@ -29,13 +29,12 @@ iptables -P FORWARD ACCEPT
 iptables -P OUTPUT ACCEPT
 
 # Rejet de toutes les connexions par défaut
-echo 'Dropping all incoming traffic on eth0...'
+echo 'Dropping all incoming traffic...'
 iptables -P INPUT DROP
 
 # Autoriser le loopback
 echo 'Allowing loopback interface...'
 iptables -A INPUT -i lo -j ACCEPT
-iptables -A OUTPUT -o lo -j ACCEPT
 
 # Ne pas casser les connexions etablies
 echo 'Maintaining already established connections...'
