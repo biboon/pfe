@@ -14,7 +14,6 @@ NTP_PORT=123
 SMTP_PORT=25
 POP3_PORT=110
 IMAP_PORT=143
-LDAP_PORT=389
 
 
 
@@ -30,18 +29,17 @@ iptables -P FORWARD ACCEPT
 iptables -P OUTPUT ACCEPT
 
 # Rejet de toutes les connexions par défaut
-echo 'Dropping all incoming traffic...'
+echo 'Dropping all incoming traffic on eth0...'
 iptables -P INPUT DROP
+
+# Autoriser le loopback
+echo 'Allowing loopback interface...'
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
 
 # Ne pas casser les connexions etablies
 echo 'Maintaining already established connections...'
 iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-iptables -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
-
-# Autoriser le loopback
-echo 'Allowing loopback interface...\n'
-iptables -A INPUT -i lo -j ACCEPT
-iptables -A OUTPUT -o lo -j ACCEPT
 
 # Début du filtrage des ports
 echo 'Filtering ports...'
@@ -79,11 +77,6 @@ iptables -t filter -A INPUT -p tcp --dport $POP3_PORT -j ACCEPT
 # IMAP
 echo 'Allowing IMAP connexions ('$IMAP_PORT')...'
 iptables -t filter -A INPUT -p tcp --dport $IMAP_PORT -j ACCEPT
-
-# LDAP
-echo 'Allowing LDAP connection only from localhost ('$LDAP_PORT')...\n'
-iptables -A INPUT -p tcp --dport $LDAP_PORT -s localhost -j ACCEPT
-iptables -A INPUT -p tcp --dport $LDAP_PORT -j DROP
 
 # DDOS Protection
 echo 'Enforcing DDOS Protection...\n'
