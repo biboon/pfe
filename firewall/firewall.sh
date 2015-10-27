@@ -6,7 +6,7 @@
 # Last Revision
 echo '=== Mur de Feu Ruleset v1.0 stable, Rev 20151026.05 ===\n'
 
-SSH_PORT=22
+SSH_PORT=2222
 HTTP_PORT=80
 HTTPS_PORT=443
 DNS_PORT=53
