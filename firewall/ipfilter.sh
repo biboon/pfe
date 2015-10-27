@@ -20,6 +20,10 @@ iptables -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 #echo 'Accept traffic coming from the local network' $localnetwork
 #iptables -A INPUT -i eth0 -s $localnetwork -j ACCEPT
 
+# Autoriser le loopback
+echo 'Allowing loopback interface...'
+iptables -A INPUT -i lo -j ACCEPT
+
 # Accepting traffic from ip specified in whitelist
 echo 'Accepting traffic from ips specified int the whitelist'
 while read line
