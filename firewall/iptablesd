@@ -1,0 +1,95 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          iptables
+# Required-Start:    mountkernfs $local_fs
+# Required-Stop:     $local_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description:       Set up iptables rules
+### END INIT INFO
+
+# Author: Romain Libaert <rlibaert@intimail.pw>
+#
+# Please remove the "Author" lines above and replace them
+# with your own name if you copy and modify this script.
+
+
+# VARIABLES
+IPT=/sbin/iptables
+IPTREST=/sbin/iptables-restore
+IPTSAVE=/sbin/iptables-save
+
+FOLDERSAV=/etc/iptables/
+FILESAV=${FOLDERSAV}rules
+### END VARIABLES
+
+
+. /lib/lsb/init-functions
+
+case "$1" in
+start)
+	log_daemon_msg 'Restoring iptables rules' iptables
+	if [ -e /var/run/iptables ]
+	then
+		log_end_msg 0
+		log_warning_msg "$0 already started"
+		exit 1
+	else
+		touch /var/run/iptables
+	fi
+
+	if [ -f $FILESAV ]
+	then
+		$IPTREST < $FILESAV
+		log_end_msg 0
+	else
+		log_end_msg 1
+		log_failure_msg "Nothing to restore at $FILESAV"
+	fi
+	;;
+
+stop)
+	log_daemon_msg 'Stopping all iptables rules' iptables
+	if [ -e /var/run/iptables ]
+	then
+		$IPT -F
+		$IPT -X
+		$IPT -P INPUT ACCEPT
+		$IPT -P FORWARD ACCEPT
+		$IPT -P OUTPUT ACCEPT
+		rm /var/run/iptables
+		log_end_msg 0
+	else
+		log_end_msg 0
+		log_warning_msg "$0 already stopped"
+		exit 1;
+	fi
+	;;
+
+restart)
+	$0 stop
+	$0 start
+	;;
+
+status)
+	log_action_msg "Showing running iptables rules"
+	$IPT -L -v
+	;;
+
+save)
+	log_daemon_msg "Saving current rules to $FILESAV" iptables
+	if [ ! -d $FOLDERSAV ]
+	then
+		mkdir $FOLDERSAV
+	fi
+	$IPTSAVE > $FILESAV
+	log_end_msg 0
+	;;
+
+*)
+	echo "Usage: $0 {start|stop|restart|status|save}" >&2
+	exit 1
+	;;
+esac
+
+exit 0

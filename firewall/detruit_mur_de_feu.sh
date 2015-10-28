@@ -1,5 +1,7 @@
-iptables -F
-iptables -X
-iptables -P INPUT ACCEPT
-iptables -P FORWARD ACCEPT
-iptables -P OUTPUT ACCEPT
+IPT=/sbin/iptables
+
+$IPT -F
+$IPT -X
+$IPT -P INPUT ACCEPT
+$IPT -P FORWARD ACCEPT
+$IPT -P OUTPUT ACCEPT
