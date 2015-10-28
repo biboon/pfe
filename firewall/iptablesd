@@ -15,6 +15,8 @@
 
 
 # VARIABLES
+DAEMON=iptablesd
+
 IPT=/sbin/iptables
 IPTREST=/sbin/iptables-restore
 IPTSAVE=/sbin/iptables-save
@@ -28,7 +30,7 @@ FILESAV=${FOLDERSAV}rules
 
 case "$1" in
 start)
-	log_daemon_msg 'Restoring iptables rules' iptables
+	log_daemon_msg 'Restoring iptables rules' $DAEMON
 	if [ -e /var/run/iptables ]
 	then
 		log_end_msg 0
@@ -49,7 +51,7 @@ start)
 	;;
 
 stop)
-	log_daemon_msg 'Stopping all iptables rules' iptables
+	log_daemon_msg 'Stopping all iptables rules' $DAEMON
 	if [ -e /var/run/iptables ]
 	then
 		$IPT -F
@@ -61,7 +63,7 @@ stop)
 		log_end_msg 0
 	else
 		log_end_msg 0
-		log_warning_msg "$0 already stopped"
+		log_warning_msg "$DAEMON already stopped"
 		exit 1;
 	fi
 	;;
@@ -71,13 +73,22 @@ restart)
 	$0 start
 	;;
 
-status)
+show)
 	log_action_msg "Showing running iptables rules"
 	$IPT -L -v
 	;;
 
+status)
+	if [ -e /var/run/iptables ]
+	then
+		log_action_msg "$DAEMON is running"
+	else
+		log_action_msg "$DAEMON is not running"
+	fi
+	;;
+
 save)
-	log_daemon_msg "Saving current rules to $FILESAV" iptables
+	log_daemon_msg "Saving current rules to $FILESAV" $DAEMON
 	if [ ! -d $FOLDERSAV ]
 	then
 		mkdir $FOLDERSAV
@@ -87,7 +98,7 @@ save)
 	;;
 
 *)
-	echo "Usage: $0 {start|stop|restart|status|save}" >&2
+	echo "Usage: $0 {start|stop|restart|status|save|show}" >&2
 	exit 1
 	;;
 esac
