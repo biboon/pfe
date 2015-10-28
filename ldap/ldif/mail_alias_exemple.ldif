@@ -1,0 +1,9 @@
+dn:cn=all,dc=mailAlias,dc=mail,dc=airslip,dc=xyz
+cn:all
+mail:all@airslip.xyz
+maildrop:admin@airslip.xyz,rlibaert@airslip.xyz
+sn: Everybody
+displayName:Everybody
+objectClass: top
+objectClass: inetOrgPerson
+objectClass: CourierMailAlias

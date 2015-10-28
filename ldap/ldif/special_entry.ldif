@@ -1,0 +1,13 @@
+dn: cn=abuse,dc=people,dc=mail,dc=intimail,dc=pw
+uid: abuse
+mail: abuse@intimail.pw
+sn: Abuse
+givenName: Abuse
+displayName: Abuse
+mailbox: intimail.pw/abuse/
+quota: 50M
+homeDirectory: /home/vmail/
+objectClass: top
+objectClass: inetOrgPerson
+objectClass: CourierMailAccount
+userPassword: {SSHA}Tkrd7FhoOd9hIEFkFKGTz6UPa1l/+FZg

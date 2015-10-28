@@ -1,2 +1,3 @@
 ldif/*
 firewall/whitelist.txt
+firewall/blacklist.txt

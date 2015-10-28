@@ -1,0 +1,8 @@
+dn: cn=all,dc=groups,dc=mail,dc=intimail,dc=pw
+uid: all
+mail: all@intimail.pw
+maildrop: jvaljean@intimail.pw,jbond@intimail.pw
+sn: Everybody
+objectClass: top
+objectClass: inetOrgPerson
+objectClass: CourierMailAlias
