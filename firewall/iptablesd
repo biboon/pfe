@@ -8,7 +8,7 @@
 # Short-Description:       Set up iptables rules
 ### END INIT INFO
 
-# Author: Romain Libaert <rlibaert@intimail.pw>
+# Author: Romain Libaert <r.libaert@gmail.com>
 #
 # Please remove the "Author" lines above and replace them
 # with your own name if you copy and modify this script.
@@ -34,7 +34,7 @@ start)
 	if [ -e /var/run/iptables ]
 	then
 		log_end_msg 0
-		log_warning_msg "$0 already started"
+		log_action_msg "$0 already started"
 		exit 1
 	else
 		touch /var/run/iptables
@@ -63,7 +63,7 @@ stop)
 		log_end_msg 0
 	else
 		log_end_msg 0
-		log_warning_msg "$DAEMON already stopped"
+		log_action_msg "$DAEMON already stopped"
 		exit 1;
 	fi
 	;;
@@ -81,9 +81,9 @@ show)
 status)
 	if [ -e /var/run/iptables ]
 	then
-		log_action_msg "$DAEMON is running"
+		log_success_msg "$DAEMON is running"
 	else
-		log_action_msg "$DAEMON is not running"
+		log_failure_msg "$DAEMON is not running"
 	fi
 	;;
 
@@ -98,8 +98,7 @@ save)
 	;;
 
 *)
-	echo "Usage: $0 {start|stop|restart|status|save|show}" >&2
-	exit 1
+	log_action_msg "Usage: $0 {start|stop|restart|status|save|show}"
 	;;
 esac
 
