@@ -9,13 +9,14 @@ use constant TIMEOUT => 0.1;
 
 my $sock = IO::Socket::INET->new(PeerAddr=>"localhost:smtp(25)")
 or die "cannot reach the server";
-
 my $select = IO::Select->new($sock);
+
 my ($status, $code) = (0, 0);
+my $tosend = "";
 
 while ($status >= 0) {
 	if ($select->can_read(TIMEOUT)) {
-		print $status;
+		print "state: $status\n";
 		$sock->recv($data, 1024);
 		#next if (length($data) < 2); # Empty data
 		print "srv> $data"; #for verbosity
@@ -32,10 +33,10 @@ while ($status >= 0) {
 		}
 
 		switch ($status) {
-			case 0 { print "ehlo intimail.pw\n"; $sock->send("ehlo intimail.pw\n"); $status++; }
-			case 1 { print "mail from:jvaljean\@intimail.pw\n"; $sock->send("mail from:jvaljean\@intimail.pw\n"); $status++; }
-			case 2 { print "rcpt to:r.libaert\@gmail.com\n"; $sock->send("rcpt to:r.libaert\@gmail.com\n"); $status++; }
-			case 3 { print "data\n"; $sock->send("data\n"); $status++; }
+			case 0 { $tosend = "ehlo intimail.pw"; }
+			case 1 { $tosend = "mail from:jvaljean\@intimail.pw"; }
+			case 2 { $tosend = "rcpt to:r.libaert\@gmail.com"; }
+			case 3 { $tosend = "data"; }
 			case 4 {
 				open(my $fd, "mailtest.txt")
 				or die "Could not open file";
@@ -45,11 +46,18 @@ while ($status >= 0) {
 					print "$row\n";
 				}
 				close $fd;
-				$status++;
 			}
-			case 5 { print "quit\n"; $sock->send("quit\n"); $status++; }
+			case 5 { $tosend = "quit"; }
 			case 6 { $status = -2; }
 			else { print "case value incorrect: $status, exiting"; $status = -1; }
+		}
+
+		if ($status >= 0 && $status < 6) {
+			if ($status != 4) {
+				print "$tosend\n";
+				$sock->send("$tosend\n");
+			}
+			$status++;
 		}
 	}
 }
