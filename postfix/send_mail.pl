@@ -23,12 +23,10 @@ while ($status >= 0) {
 		foreach $fline (@lines) {
 			$fline =~ m/([0-9]{3})[ \-].*/;
 			$code = $1;
-			if (($status == 0 && $code != "220") ||
-			    ($status == 1 && $code != "250") ||
-			    ($status == 2 && $code != "250") ||
-			    ($status == 3 && $code != "250") ||
-			    ($status == 4 && $code != "354") ||
-			    ($status == 5 && $code != "250")) {
+			if ((($status == 1 || $status == 2 || $status == 3 || $status == 5) && $code != "250")
+			 || ($status == 0 && $code != "220")
+			 || ($status == 4 && $code != "354")
+			 || ($status == 6 && $code != "221")) {
 				$status = -1;
 			}				
 		}
@@ -49,11 +47,12 @@ while ($status >= 0) {
 				close $fd;
 				$status++;
 			}
-			case 5 { print "quit\n"; $sock->send("quit\n"); $status == -2; }
+			case 5 { print "quit\n"; $sock->send("quit\n"); $status++; }
+			case 6 { $status = -2; }
 			else { print "case value incorrect: $status, exiting"; $status = -1; }
 		}
 	}
 }
 
-$sock->send("quit\n");
+if ( $status == -1) { $sock->send("quit\n"); }
 
