@@ -4,8 +4,27 @@
 use IO::Socket;
 use IO::Select;
 use Switch;
+use Getopt::Std;
 
 use constant TIMEOUT => 0.1;
+
+#--- Checking options first ---#
+
+my %options=();
+getopts("vs:d:f:", \%options);
+
+if (!($options{s} && $options{d} && $options{f})) {
+	die "Usage: $0 [-v] -s sender -d destination -f mail file";
+}
+
+my $sender = $options{s};
+my $dest = $options{d};
+my $mailfile = $options{f};
+
+$sender =~ s/\@/\\\@/g;
+$dest =~ s/\@/\\\@/g;
+
+#--- Finished, sending mail ---#
 
 my $sock = IO::Socket::INET->new(PeerAddr=>"localhost:smtp(25)")
 or die "cannot reach the server";
@@ -16,10 +35,10 @@ my $tosend = "";
 
 while ($status >= 0) {
 	if ($select->can_read(TIMEOUT)) {
-		print "state: $status\n";
+		if ($options{v}) { print "state: $status\n"; }
 		$sock->recv($data, 1024);
 		#next if (length($data) < 2); # Empty data
-		print "srv> $data"; #for verbosity
+		if ($options{v}) { print "srv> $data"; }
 		@lines = split(/^/, $data);
 		foreach $fline (@lines) {
 			$fline =~ m/([0-9]{3})[ \-].*/;
@@ -34,16 +53,16 @@ while ($status >= 0) {
 
 		switch ($status) {
 			case 0 { $tosend = "ehlo intimail.pw"; }
-			case 1 { $tosend = "mail from:jvaljean\@intimail.pw"; }
-			case 2 { $tosend = "rcpt to:r.libaert\@gmail.com"; }
+			case 1 { $tosend = "mail from:$sender"; }
+			case 2 { $tosend = "rcpt to:$dest"; }
 			case 3 { $tosend = "data"; }
 			case 4 {
-				open(my $fd, "mailtest.txt")
-				or die "Could not open file";
+				open(my $fd, $mailfile)
+				or die "Could not open file $mailfile";
 				while (my $row = <$fd>) {
 					chomp $row;
 					$sock->send("$row\n");
-					print "$row\n";
+					if ($options{v}) { print "$row\n"; }
 				}
 				close $fd;
 			}
@@ -54,8 +73,8 @@ while ($status >= 0) {
 
 		if ($status >= 0 && $status < 6) {
 			if ($status != 4) {
-				print "$tosend\n";
 				$sock->send("$tosend\n");
+				if ($options{v}) { print "$tosend\n"; }
 			}
 			$status++;
 		}
