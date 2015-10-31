@@ -39,7 +39,7 @@ do
 	case $options in
 		# Accept traffic from ip specified in whitelist
 		w)
-			BLACKLIST=$OPTARG
+			WHITELIST=$OPTARG
 			echo 'Accepting traffic from ip specified in the whitelist'
 			while read line
 			do
@@ -49,12 +49,12 @@ do
                 			echo "Allowing ip $line..."
 					$IPT -A INPUT -i eth0 -s $line -j ACCEPT
 				fi
-			done < $BLACKLIST
+			done < $WHITELIST
 			;;
 
 		# Block traffic from ip specified in blacklist
 		b)
-			WHITELIST=$OPTARG
+			BLACKLIST=$OPTARG
 			echo 'Blocking traffic from ip specified in the blacklist'
 			while read line
 			do
@@ -64,8 +64,8 @@ do
 					echo "Blocking ip $line..."
 					$IPT -A INPUT -i eth0 -s $line -j DROP
 				fi
-				done < $WHITELIST
-				;;
+			done < $BLACKLIST
+			;;
 
 		*)
 			echo "unrecognized option -$OPTARG"
