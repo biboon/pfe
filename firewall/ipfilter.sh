@@ -3,9 +3,14 @@
 
 IPT=/sbin/iptables
 
-WHITELIST=whitelist.txt
-BLACKLIST=blacklist.txt
 localnetwork=192.168.1.0/24
+
+
+# Usage function
+usage() { echo "Usage: $0 [-b blacklist] [-w whitelist]"; exit 1; }
+
+unset WHITELIST
+unset BLACKLIST
 
 # Interdire toute connexion entrante et sortante
 echo 'Dropping all traffic'
@@ -29,27 +34,47 @@ echo 'Allowing loopback interface...'
 $IPT -A INPUT -i lo -j ACCEPT
 
 
-# Accept traffic from ip specified in whitelist
-echo 'Accepting traffic from ip specified in the whitelist'
-while read line
+while getopts ":b:w:" options
 do
-        [ -z "$line" ] && continue
-        if [ ! ${line:0:1} == "#" ]
-        then
-                echo "Allowing ip $line..."
-                $IPT -A INPUT -i eth0 -s $line -j ACCEPT
-        fi
-done < $WHITELIST
+	case $options in
+		# Accept traffic from ip specified in whitelist
+		w)
+			BLACKLIST=$OPTARG
+			echo 'Accepting traffic from ip specified in the whitelist'
+			while read line
+			do
+			        [ -z "$line" ] && continue
+        			if [ ! ${line:0:1} == "#" ]
+        			then
+                			echo "Allowing ip $line..."
+					$IPT -A INPUT -i eth0 -s $line -j ACCEPT
+				fi
+			done < $BLACKLIST
+			;;
 
+		# Block traffic from ip specified in blacklist
+		b)
+			WHITELIST=$OPTARG
+			echo 'Blocking traffic from ip specified in the blacklist'
+			while read line
+			do
+				[ -z "$line" ] && continue
+				if [ ! ${line:0:1} == "#" ]
+				then
+					echo "Blocking ip $line..."
+					$IPT -A INPUT -i eth0 -s $line -j DROP
+				fi
+				done < $WHITELIST
+				;;
 
-# Block traffic from ip specified in blacklist
-echo 'Blocking traffic from ip specified in the blacklist'
-while read line
-do
-        [ -z "$line" ] && continue
-        if [ ! ${line:0:1} == "#" ]
-        then
-                echo "Blocking ip $line..."
-                $IPT -A INPUT -i eth0 -s $line -j DROP
-        fi
-done < $BLACKLIST
+		*)
+			echo "unrecognized option -$OPTARG"
+			usage
+			;;
+	esac
+done
+
+if [ -z $WHITELIST ] || [ -z $BLACKLIST ]
+then
+	usage
+fi
