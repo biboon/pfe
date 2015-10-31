@@ -7,32 +7,40 @@ IPT=/sbin/iptables
 
 WHITELIST=/etc/iptables/whitelist.txt
 BLACKLIST=/etc/iptables/blacklist.txt
+NOTIF=/etc/iptables/notif.txt
 
 
 # Get SASL LOGIN authentication failed lines from mail.log
-cat /var/log/mail.log | grep SASL\ LOGIN\ authentication\ failed >> ${TMPFOLDER}1${TMPFILEEXT}
+DATA=`cat /var/log/mail.log | grep SASL\ LOGIN\ authentication\ failed`
 
 # Get ips only
-cat ${TMPFOLDER}1${TMPFILEEXT} | sed -ne 's/.*[^0-9]\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\)[^0-9].*/\1/p' >> ${TMPFOLDER}saslips${TMPFILEEXT}
+DATA=`echo "$DATA" | sed -ne 's/.*[^0-9]\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\)[^0-9].*/\1/p'`
 
 # Sort and remove dubs
-cat ${TMPFOLDER}saslips${TMPFILEEXT} | sort | uniq >> ${TMPFOLDER}3${TMPFILEEXT}
+echo "$DATA" | sort | uniq >> ${TMPFOLDER}saslips${TMPFILEEXT}
 
 # Remove ips of the whitelist
-cat ${TMPFOLDER}3${TMPFILEEXT} | grep -vwf $WHITELIST >> ${TMPFOLDER}4${TMPFILEEXT}
+DATA=`cat ${TMPFOLDER}saslips${TMPFILEEXT} | grep -vwf $WHITELIST`
 
 # Remove ips already in the blacklist
-cat ${TMPFOLDER}4${TMPFILEEXT} | grep -vwf $BLACKLIST >> ${TMPFOLDER}5${TMPFILEEXT}
+echo "$DATA" | grep -vwf $BLACKLIST >> ${TMPFOLDER}iplist${TMPFILEEXT}
 
-# Append to blacklist if new ips and block
-if [ -s ${TMPFOLDER}5${TMPFILEEXT} ]
+
+# Do the job
+if [ -s ${TMPFOLDER}iplist${TMPFILEEXT} ]
 then
-	unset CURDATE
+	# Append to blacklist
 	CURDATE=`date +%D\ %T`
 	echo '' >> $BLACKLIST
 	echo "#$CURDATE" >> $BLACKLIST
-	cat ${TMPFOLDER}5${TMPFILEEXT} >> $BLACKLIST
+	cat ${TMPFOLDER}iplist${TMPFILEEXT} >> $BLACKLIST
 
+	# Copy new ip blacklisted in the notif file
+	if [ -e $NOTIF ]; then rm $NOTIF; fi
+	echo "#$CURDATE" >> $NOTIF
+	cat ${TMPFOLDER}iplist${TMPFILEEXT} >> $NOTIF
+
+	# Block the new ips
 	while read line
 	do
 		[ -z "$line" ] && continue
@@ -41,13 +49,14 @@ then
 			echo "Blocking new ip $line..."
 			$IPT -A INPUT -i eth0 -s $line -j DROP
 		fi
-	done < ${TMPFOLDER}5${TMPFILEEXT}
+	done < ${TMPFOLDER}iplist${TMPFILEEXT}
+
+	# Save modifications
+	service iptablesd save
 else
 	echo 'Nothing new to block'
 fi
 
-# Save modifications
-service iptablesd save
 
 # Remove temp files
 rm -f ${TMPFOLDER}*${TMPFILEEXT}
