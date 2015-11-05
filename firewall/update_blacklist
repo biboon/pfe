@@ -11,10 +11,10 @@ NOTIF=/etc/iptables/notif.txt
 
 
 # Get SASL LOGIN authentication failed lines from mail.log
-DATA=`cat /var/log/mail.log | grep SASL\ LOGIN\ authentication\ failed`
+DATA=`cat /var/log/mail.log | grep 'SASL\ LOGIN\ authentication\ failed\|Relay\ access\ denied'`
 
 # Get ips only
-DATA=`echo "$DATA" | sed -ne 's/.*[^0-9]\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\)[^0-9].*/\1/p'`
+DATA=`echo "$DATA" | sed -ne 's/.*\[\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\)\].*/\1/p'`
 
 # Sort and remove dubs
 echo "$DATA" | sort | uniq >> ${TMPFOLDER}saslips${TMPFILEEXT}
@@ -47,7 +47,7 @@ then
 		if [ ! ${line:0:1} == "#" ]
 		then
 			echo "Blocking new ip $line..."
-			$IPT -A INPUT -i eth0 -s $line -j DROP
+			$IPT -I INPUT 1 -i eth0 -s $line -j DROP
 		fi
 	done < ${TMPFOLDER}iplist${TMPFILEEXT}
 
