@@ -1,4 +1,9 @@
 #!/bin/bash
+# For debugging
+set -x
+rm /tmp/*.log
+exec 2>> /tmp/json.log
+whoami >> /tmp/user.log
 
 # Simple json parser script
 # Supposed to be called by the filter.sh script
@@ -6,7 +11,7 @@
 
 INTMP=/tmp/in.$$
 JSONTMP=/tmp/newmail.json.$$
-JSONBASE=/home/vmail/json/
+USERDATA=/home/vmail/userdata/
 MINSIZE=4
 
 # Exit codes from <sysexits.h>
@@ -51,16 +56,18 @@ echo -e "\t\"subject\": \"$SUBJECT\"," >> $JSONTMP
 echo -e "\t\"timestamp\": \"$DATE\"," >> $JSONTMP
 echo -e "\t\"unixtimestamp\": \"$UNIXDATE\"," >> $JSONTMP
 echo -e "\t\"queueid\": \"$QUEUEID\"," >> $JSONTMP
+echo -e "\t\"filepath\": \"\$$QUEUEID\$\"," >> $JSONTMP
 echo -e "\t\"size\": \"$SIZE\"," >> $JSONTMP
 echo -e "\t\"status\": \"0\"," >> $JSONTMP
 echo -e "\t\"pj\": \"0\"," >> $JSONTMP
 
 
-# Create the directory if it doesn't exists
-if [ ! -d $JSONBASE ]
+# Create the directory if it doesn't exist
+if [ ! -d $USERDATA ]
 then
-	mkdir -p $JSONBASE
-	chmod g=rx $JSONBASE
+	mkdir $USERDATA || {
+		echo Cannot create folder $USERDATA; exit $EX_TEMPFAIL; }
+	chmod g=rwx $USERDATA
 fi
 
 
@@ -69,8 +76,8 @@ for param in "$@"
 do
 	unset MAILBOX
 	unset DOMAIN
-	unset ID
 	unset FOLDER
+	unset ID
 
 	# Get the folder to write in
 	MAILBOX=`echo $param | cut -f1 -d@`
@@ -81,16 +88,21 @@ do
 	fi
 	
 	# Create the folders if needed and assign rights
-	FOLDER=${JSONBASE}${DOMAIN}/${MAILBOX}/
-	if [ ! -d ${JSONBASE}${DOMAIN} ]
+	FOLDER=${USERDATA}${DOMAIN}/${MAILBOX}/json/
+	if [ ! -d ${USERDATA}${DOMAIN} ]
 	then
 		mkdir ${JSONBASE}${DOMAIN}
-		chmod g=rx ${JSONBASE}${DOMAIN}
+		chmod g=rwx ${JSONBASE}${DOMAIN}
+	fi
+	if [ ! -d ${USERDATA}${DOMAIN}/${MAILBOX} ]
+	then
+		mkdir ${USERDATA}${DOMAIN}/${MAILBOX}
+		chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}
 	fi
 	if [ ! -d $FOLDER ]
 	then
 		mkdir $FOLDER
-		chmod g=rx $FOLDER
+		chmod g=rwx $FOLDER
 	fi
 
 	# Create inbox.json
@@ -98,7 +110,7 @@ do
 	then
 		echo '[' >> ${FOLDER}inbox.json
 		echo ']' >> ${FOLDER}inbox.json
-		chmod g=rx ${FOLDER}inbox.json
+		chmod g=rwx ${FOLDER}inbox.json
 	fi
 	# Set initial id in case inbox.json is empty
 	if [ `wc -l ${FOLDER}inbox.json | cut -f1 -d\ ` -lt $MINSIZE ]
@@ -109,7 +121,8 @@ do
 	# GET THE ID MUDAFUGA
 	if [ -z "$ID" ]
 	then
-		ID=`cat ${FOLDER}inbox.json | grep \"id\" | head -n 1 | sed 's/.*\"\([0-9]*\)\".*/\1/g'`
+		ID=`grep \"id\" ${FOLDER}inbox.json | head -n 1 | sed 's/.*\"\([0-9]*\)\".*/\1/g'`
+		echo ID is $ID
 		ID=$(($ID + 1))
 	fi
 
@@ -126,3 +139,4 @@ do
 	sed -i "/\[/r $JSONTMP" ${FOLDER}inbox.json
 done
 
+exit 0

@@ -5,7 +5,7 @@
 # Supposed to be invoked as /path/to/script -f sender recipients
 
 
-INSPECT_DIR=/home/vmail/filter
+INTMP=/tmp/in.$$
 SENDMAIL="/usr/sbin/sendmail -G -i" # Don't use -t here
 PARSER=/home/moth/Documents/pfe/postfix/json_parser.sh
 
@@ -16,18 +16,21 @@ EX_UNAVAILABLE=69
 #touch /tmp/filter
 
 # Clean up when done or aborting
-trap "rm -f in.$$" 0 1 2 3 15
+trap "rm -f /tmp/*.$$" 0 1 2 3 15
 
 # Start processing
-cd $INSPECT_DIR || {
-	echo $INSPECT_DIR does not exists; exit $EX_TEMPFAIL; }
-
-cat > in.$$ || {
+cat > $INTMP || {
 	echo Cannot save mail to file; exit $EX_TEMPFAIL; }
 
-$PARSER "$@" < in.$$ || {
+$PARSER "$@" < $INTMP || {
 	echo Message content rejected; exit $EX_UNAVAILABLE; }
 
-$SENDMAIL "$@" < in.$$
+# Remove size and queueid before sending the mail
+# Check postfix's main.cf before modifying anything here
+shift
+shift
+SENDER=$1
+shift
+$SENDMAIL -f $SENDER -- "$@" < $INTMP
 
 exit $?
