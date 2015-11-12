@@ -17,6 +17,7 @@ MINSIZE=4
 # Exit codes from <sysexits.h>
 EX_TEMPFAIL=75
 EX_UNAVAILABLE=69
+EX_CANTCREAT=73
 
 #touch /tmp/json_parser
 
@@ -50,7 +51,8 @@ fi
 
 
 # Writing some tmp files
-echo '{' >> $JSONTMP
+echo '{' >> $JSONTMP || {
+	echo Cannot write tmp json file; exit $EX_CANTCREAT; }
 echo -e "\t\"from\": \"$FROM\"," >> $JSONTMP
 echo -e "\t\"subject\": \"$SUBJECT\"," >> $JSONTMP
 echo -e "\t\"timestamp\": \"$DATE\"," >> $JSONTMP
@@ -66,7 +68,7 @@ echo -e "\t\"pj\": \"0\"," >> $JSONTMP
 if [ ! -d $USERDATA ]
 then
 	mkdir $USERDATA || {
-		echo Cannot create folder $USERDATA; exit $EX_TEMPFAIL; }
+		echo Cannot create folder $USERDATA; exit $EX_CANTCREAT; }
 	chmod g=rwx $USERDATA
 fi
 
@@ -91,24 +93,28 @@ do
 	FOLDER=${USERDATA}${DOMAIN}/${MAILBOX}/json/
 	if [ ! -d ${USERDATA}${DOMAIN} ]
 	then
-		mkdir ${JSONBASE}${DOMAIN}
-		chmod g=rwx ${JSONBASE}${DOMAIN}
+		mkdir ${USERDATA}${DOMAIN} || {
+			echo Cannot create folder; exit $EX_CANTCREAT; }
+		chmod g=rwx ${USERDATA}${DOMAIN}
 	fi
 	if [ ! -d ${USERDATA}${DOMAIN}/${MAILBOX} ]
 	then
-		mkdir ${USERDATA}${DOMAIN}/${MAILBOX}
+		mkdir ${USERDATA}${DOMAIN}/${MAILBOX} || {
+			echo Cannot create folder; exit $EX_CANTCREAT; }
 		chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}
 	fi
 	if [ ! -d $FOLDER ]
 	then
-		mkdir $FOLDER
+		mkdir $FOLDER || {
+			echo Cannot create folder; exit $EX_CANTCREAT; }
 		chmod g=rwx $FOLDER
 	fi
 
 	# Create inbox.json
 	if [ ! -f ${FOLDER}inbox.json ]
 	then
-		echo '[' >> ${FOLDER}inbox.json
+		echo '[' >> ${FOLDER}inbox.json || {
+			echo Cannot create file; exit $EX_CANTCREAT; }
 		echo ']' >> ${FOLDER}inbox.json
 		chmod g=rwx ${FOLDER}inbox.json
 	fi
@@ -122,7 +128,6 @@ do
 	if [ -z "$ID" ]
 	then
 		ID=`grep \"id\" ${FOLDER}inbox.json | head -n 1 | sed 's/.*\"\([0-9]*\)\".*/\1/g'`
-		echo ID is $ID
 		ID=$(($ID + 1))
 	fi
 
