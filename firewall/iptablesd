@@ -75,7 +75,7 @@ restart)
 
 show)
 	log_action_msg "Showing running iptables rules"
-	$IPT -L -v
+	$IPT -L -v -n
 	;;
 
 status)

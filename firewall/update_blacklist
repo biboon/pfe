@@ -11,7 +11,7 @@ NOTIF=/etc/iptables/notif.txt
 
 
 # Get SASL LOGIN authentication failed lines from mail.log
-DATA=`cat /var/log/mail.log | grep 'SASL\ LOGIN\ authentication\ failed\|Relay\ access\ denied'`
+DATA=`cat /var/log/mail.log.1 | grep 'SASL\ LOGIN\ authentication\ failed\|Relay\ access\ denied\|Connection\ rate\ limit\ exceeded'`
 
 # Get ips only
 DATA=`echo "$DATA" | sed -ne 's/.*\[\([0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\)\].*/\1/p'`
