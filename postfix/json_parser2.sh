@@ -1,9 +1,4 @@
 #!/bin/bash
-# For debugging
-#set -x
-#rm /tmp/*.log
-#exec 2>> /tmp/json.log
-#whoami >> /tmp/user.log
 
 # Simple json parser script
 # Supposed to be called by the filter.sh script
@@ -13,6 +8,7 @@ INTMP=/tmp/in.$$
 JSONTMP=/tmp/newmail.json.$$
 USERDATA=/home/vmail/userdata/
 MAILBASE=/home/vmail/
+LOGFILE=/var/log/intimail/json_parser.log
 MINSIZE=4
 TIMEUP=5 # Timeout in minutes
 
@@ -24,7 +20,7 @@ EX_CANTCREAT=73
 #touch /tmp/json_parser
 
 # Clean up when done or aborting
-trap "rm -f /tmp/*.$$" 0 1 2 3 15
+trap "rm -f /tmp/*.$$ && echo `date +%F%t%T%t` >> $LOGFILE" 0 1 2 3 15
 
 QUEUEID=$1
 shift
@@ -36,7 +32,7 @@ FROM=$1
 shift
 
 cat > $INTMP || {
-	echo Cannot save mail to file; exit $EX_TEMPFAIL; }
+	echo Cannot save mail to $INTMP >> $LOGFILE; exit $EX_TEMPFAIL; }
 
 
 # Let's parse the data
@@ -54,7 +50,7 @@ fi
 
 # Writing some tmp files
 echo '{' >> $JSONTMP || {
-	echo Cannot write tmp json file; exit $EX_CANTCREAT; }
+	echo Cannot write temp file $JSONTMP >> $LOGFILE; exit $EX_CANTCREAT; }
 echo -e "\t\"from\": \"$FROM\"," >> $JSONTMP
 echo -e "\t\"subject\": \"$SUBJECT\"," >> $JSONTMP
 echo -e "\t\"timestamp\": \"$DATE\"," >> $JSONTMP
@@ -69,7 +65,7 @@ echo -e "\t\"pj\": \"0\"," >> $JSONTMP
 if [ ! -d $USERDATA ]
 then
 	mkdir $USERDATA || {
-		echo Cannot create folder $USERDATA; exit $EX_CANTCREAT; }
+		echo Cannot create folder $USERDATA >> $LOGFILE; exit $EX_CANTCREAT; }
 	chmod g=rwx $USERDATA
 fi
 
@@ -93,14 +89,14 @@ do
 		DOMAIN=`echo $param | cut -f2 -d@`
 		if [ -z "$MAILBOX" -o -z "$DOMAIN" ]
 		then
-			echo Syntax error in recipients list; exit $EX_TEMPFAIL;
+			echo Error in recipients list >> $LOGFILE; exit $EX_TEMPFAIL;
 		fi
 	
 		# Create the folders if needed and assign rights
 		if [ ! -d ${USERDATA}${DOMAIN} ]
 		then
 			mkdir ${USERDATA}${DOMAIN} || {
-				echo Cannot create folder; exit $EX_CANTCREAT; }
+				echo Cannot create folder >> $LOGFILE; exit $EX_CANTCREAT; }
 			chmod g=rwx ${USERDATA}${DOMAIN}
 		fi
 		JFOLDER=${USERDATA}${DOMAIN}/${MAILBOX}/json/
