@@ -64,8 +64,7 @@ echo -e "\t\"pj\": \"0\"," >> $JSONTMP
 # Create the directory if it doesn't exist
 if [ ! -d $USERDATA ]
 then
-	mkdir $USERDATA || {
-		echo Cannot create folder $USERDATA >> $LOGFILE; exit $EX_CANTCREAT; }
+	mkdir $USERDATA
 	chmod g=rwx $USERDATA
 fi
 
@@ -95,23 +94,20 @@ do
 		# Create the folders if needed and assign rights
 		if [ ! -d ${USERDATA}${DOMAIN} ]
 		then
-			mkdir ${USERDATA}${DOMAIN} || {
-				echo Cannot create folder >> $LOGFILE; exit $EX_CANTCREAT; }
+			mkdir ${USERDATA}${DOMAIN}
 			chmod g=rwx ${USERDATA}${DOMAIN}
 		fi
 		JFOLDER=${USERDATA}${DOMAIN}/${MAILBOX}/json/
 		if [ ! -d $JFOLDER ]
 		then
-			mkdir -p $JFOLDER || {
-				echo Cannot create folder; exit $EX_CANTCREAT; }
+			mkdir -p $JFOLDER
 			chmod -R g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}
 		fi
 	
 		# Create inbox.json
 		if [ ! -f ${JFOLDER}inbox.json ]
 		then
-			echo '[' >> ${JFOLDER}inbox.json || {
-				echo Cannot create file; exit $EX_CANTCREAT; }
+			echo '[' >> ${JFOLDER}inbox.json
 			echo ']' >> ${JFOLDER}inbox.json
 			chmod g=rwx ${JFOLDER}inbox.json
 		fi
@@ -132,34 +128,32 @@ do
 		then
 			FILEPATH=${FILELIST#*${FOLDMAILBOX}}
 		else
-			echo Seems like there is two mailfiles with the same queue ID
 			continue
 		fi
 
 		# Let's copy and finish to write the info before inserting into json
-		cp $JSONTMP ${JSONTMP}${MAILBOX}
-		echo -e "\t\"id\": \"$ID\"," >> ${JSONTMP}${MAILBOX}
-		echo -e "\t\"to\": \"$param\"" >> ${JSONTMP}${MAILBOX}
+		cp $JSONTMP ${JSONTMP}.${MAILBOX}
+		echo -e "\t\"id\": \"$ID\"," >> ${JSONTMP}.${MAILBOX}
+		echo -e "\t\"to\": \"$param\"" >> ${JSONTMP}.${MAILBOX}
 
 		if [ $ID -ne 0 ]
 		then
-			echo "}," >> ${JSONTMP}${MAILBOX}
+			echo "}," >> ${JSONTMP}.${MAILBOX}
 		else
-			echo '}' >> ${JSONTMP}${MAILBOX}
+			echo '}' >> ${JSONTMP}.${MAILBOX}
 		fi
 		RECIPIENTS=(${RECIPIENTS[@]:0:$index} ${RECIPIENTS[@]:$(($index + 1))})
 		((index--))
 
 		if [ ! -d ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/ ]
 		then
-			mkdir ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/ || {
-				echo Cannot create folder; exit $EX_CANTCREAT; }
+			mkdir ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/
 			chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/
 		fi
 		mv $FILELIST ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/${UNIXDATE}.${QUEUEID}
 		chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/${UNIXDATE}.${QUEUEID}
 
-		sed -i "/\[/r ${JSONTMP}${MAILBOX}" ${JFOLDER}inbox.json
+		sed -i "/\[/r ${JSONTMP}.${MAILBOX}" ${JFOLDER}inbox.json
 	done
 
 	if [ ${#RECIPIENTS[@]} -gt 0 ]
