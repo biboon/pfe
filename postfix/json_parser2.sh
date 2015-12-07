@@ -10,7 +10,7 @@ USERDATA=/home/vmail/userdata/
 MAILBASE=/home/vmail/
 LOGFILE=/var/log/intimail/json_parser.log
 MINSIZE=4
-TIMEUP=5 # Timeout in minutes
+TIMEUP=6 # Timeout in minutes
 
 # Exit codes from <sysexits.h>
 EX_TEMPFAIL=75
@@ -20,7 +20,7 @@ EX_CANTCREAT=73
 #touch /tmp/json_parser
 
 # Clean up when done or aborting
-trap "rm -f /tmp/*.$$ && echo `date +%F%t%T%t` >> $LOGFILE" 0 1 2 3 15
+#trap "rm -f /tmp/*.$$; echo `date +%F%t%T%t` json_parser exited with code $? >> $LOGFILE; exit $EX_TEMPFAIL" 0 1 2 3 15
 
 QUEUEID=$1
 shift
@@ -36,7 +36,6 @@ cat > $INTMP || {
 
 
 # Let's parse the data
-#DATE=`grep Date: $INTMP | sed 's/Date: \(.*\)/\1/'`
 DATE=`date +%F\ %T`
 UNIXDATE=`date -d "$DATE" +%s`
 
@@ -73,7 +72,7 @@ fi
 # We copy all the recipients to another array
 RECIPIENTS=("$@")
 
-while [ $TIMEOUT -gt 0 ];
+while [[ $TIMEUP -gt 0 ]]
 do
 
 	for (( index=0; index<${#RECIPIENTS[@]}; index++))
@@ -83,12 +82,15 @@ do
 		unset JFOLDER
 		unset ID
 
+		param=${RECIPIENTS[$index]}
+		echo doing \#$index $param >> $LOGFILE
+		
 		# Get the folder to write in
 		MAILBOX=`echo $param | cut -f1 -d@`
 		DOMAIN=`echo $param | cut -f2 -d@`
 		if [ -z "$MAILBOX" -o -z "$DOMAIN" ]
 		then
-			echo Error in recipients list >> $LOGFILE; exit $EX_TEMPFAIL;
+			echo Error in recipients list $MAILBOX $DOMAIN >> $LOGFILE; exit $EX_TEMPFAIL;
 		fi
 	
 		# Create the folders if needed and assign rights
@@ -123,7 +125,7 @@ do
 
 		#Try to get the filepath
 		FOLDMAILBOX=${MAILBASE}${DOMAIN}/${MAILBOX}/
-		FILELIST=`grep -ril $QUEUEID $FOLDERMAILBOX`
+		FILELIST=`grep -rli $QUEUEID $FOLDERMAILBOX`
 		if [ `wc -l "$FILELIST" | cut -f1 -d\ ` -eq 1 ]
 		then
 			FILEPATH=${FILELIST#*${FOLDMAILBOX}}
@@ -158,8 +160,8 @@ do
 
 	if [ ${#RECIPIENTS[@]} -gt 0 ]
 	then
-		sleep 60
-		TIMEUP=$(($TIMEUP - 1))
+		sleep 20
+		((TIMEUP--))
 	else
 		TIMEUP=0
 	fi
