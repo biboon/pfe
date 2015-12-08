@@ -9,6 +9,7 @@ JSONTMP=/tmp/newmail.json.$$
 USERDATA=/home/vmail/userdata/
 MAILBASE=/home/vmail/
 LOGFILE=/var/log/intimail/json_parser.log
+LOGFILE=/tmp/json_parser.log
 MINSIZE=4
 RETRIES=8 # Number of retries
 SLEEPTIME=1
