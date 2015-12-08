@@ -7,7 +7,7 @@
 
 INTMP=/tmp/in.$$
 SENDMAIL="/usr/sbin/sendmail -G -i" # Don't use -t here
-PARSER=/home/moth/Documents/pfe/postfix/json_parser.sh
+PARSER=/home/moth/Documents/pfe/postfix/json_parser2.sh
 
 # Exit codes from <sysexits.h>
 EX_TEMPFAIL=75
@@ -20,17 +20,15 @@ trap "rm -f /tmp/*.$$" 0 1 2 3 15
 
 # Start processing
 cat > $INTMP || {
-	echo Cannot save mail to file; exit $EX_TEMPFAIL; }
-
-$PARSER "$@" < $INTMP || {
-	echo Message content rejected; exit $EX_UNAVAILABLE; }
+	echo Cannot save mail to file $INTMP; exit $EX_TEMPFAIL; }
 
 # Remove size and queueid before sending the mail
 # Check postfix's main.cf before modifying anything here
-shift
-shift
-SENDER=$1
-shift
-$SENDMAIL -f $SENDER -- "$@" < $INTMP
+SENDER=$3
+
+$SENDMAIL -f $SENDER -- "${@:4}" < $INTMP || {
+	echo Sendmail failed exit code $?; exit $?; }
+
+nohup $PARSER "$@" < $INTMP
 
 exit $?

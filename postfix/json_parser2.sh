@@ -10,7 +10,8 @@ USERDATA=/home/vmail/userdata/
 MAILBASE=/home/vmail/
 LOGFILE=/var/log/intimail/json_parser.log
 MINSIZE=4
-TIMEUP=6 # Timeout in minutes
+RETRIES=8 # Number of retries
+SLEEPTIME=1
 
 # Exit codes from <sysexits.h>
 EX_TEMPFAIL=75
@@ -18,9 +19,10 @@ EX_UNAVAILABLE=69
 EX_CANTCREAT=73
 
 #touch /tmp/json_parser
+echo `date +%F%t%T%t` Starting json_parser using arguments: $@ >> $LOGFILE
 
 # Clean up when done or aborting
-#trap "rm -f /tmp/*.$$; echo `date +%F%t%T%t` json_parser exited with code $? >> $LOGFILE; exit $EX_TEMPFAIL" 0 1 2 3 15
+trap "rm -f /tmp/*.$$.* /tmp/*.$$; echo `date +%F%t%T%t` json_parser exited with code $? >> $LOGFILE; exit $EX_TEMPFAIL" 0 1 2 3 15
 
 QUEUEID=$1
 shift
@@ -58,24 +60,26 @@ echo -e "\t\"queueid\": \"$QUEUEID\"," >> $JSONTMP
 echo -e "\t\"size\": \"$SIZE\"," >> $JSONTMP
 echo -e "\t\"status\": \"0\"," >> $JSONTMP
 echo -e "\t\"pj\": \"0\"," >> $JSONTMP
-
+echo Written temp file $JSONTMP >> $LOGFILE
 
 # Create the directory if it doesn't exist
 if [ ! -d $USERDATA ]
 then
 	mkdir $USERDATA
 	chmod g=rwx $USERDATA
+	echo Created directory $USERDATA >> $LOGFILE
 fi
 
 
 # At this state, $@ is the array of recipient addresses
 # We copy all the recipients to another array
 RECIPIENTS=("$@")
+RECINB=${#RECIPIENTS[@]}
 
-while [[ $TIMEUP -gt 0 ]]
+while [ $RETRIES -gt 0 ]
 do
 
-	for (( index=0; index<${#RECIPIENTS[@]}; index++))
+	for (( index=0; $RECINB-$index; index++ ))
 	do
 		unset MAILBOX
 		unset DOMAIN
@@ -83,7 +87,7 @@ do
 		unset ID
 
 		param=${RECIPIENTS[$index]}
-		echo doing \#$index $param >> $LOGFILE
+		echo Doing recipient \#$index of $RECINB $param >> $LOGFILE
 		
 		# Get the folder to write in
 		MAILBOX=`echo $param | cut -f1 -d@`
@@ -98,12 +102,14 @@ do
 		then
 			mkdir ${USERDATA}${DOMAIN}
 			chmod g=rwx ${USERDATA}${DOMAIN}
+			echo Created directory ${USERDATA}${DOMAIN} >> $LOGFILE
 		fi
 		JFOLDER=${USERDATA}${DOMAIN}/${MAILBOX}/json/
 		if [ ! -d $JFOLDER ]
 		then
 			mkdir -p $JFOLDER
 			chmod -R g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}
+			echo Created directory $JFOLDER >> $LOGFILE
 		fi
 	
 		# Create inbox.json
@@ -112,6 +118,7 @@ do
 			echo '[' >> ${JFOLDER}inbox.json
 			echo ']' >> ${JFOLDER}inbox.json
 			chmod g=rwx ${JFOLDER}inbox.json
+			echo Created inbox.json for $param >> $LOGFILE
 		fi
 
 		# GET THE ID MUDAFUGA
@@ -124,13 +131,16 @@ do
 		fi
 
 		#Try to get the filepath
-		FOLDMAILBOX=${MAILBASE}${DOMAIN}/${MAILBOX}/
-		FILELIST=`grep -rli $QUEUEID $FOLDERMAILBOX`
-		if [ `wc -l "$FILELIST" | cut -f1 -d\ ` -eq 1 ]
+		FOLDERMAILBOX=${MAILBASE}${DOMAIN}/${MAILBOX}/
+		FILELIST=`grep -rli $QUEUEID $FOLDERMAILBOX` || unset FILELIST
+		if [ -z "$FILELIST" -o `echo "$FILELIST" | wc -l` -ne 1 ]
 		then
-			FILEPATH=${FILELIST#*${FOLDMAILBOX}}
-		else
+			echo Could not find mail with id $QUEUEID in $FOLDERMAILBOX >> $LOGFILE
 			continue
+		else
+			echo $FILELIST
+			FILEPATH=${FILELIST#$FOLDERMAILBOX}
+			echo Found mail with id $QUEUEID in $FOLDERMAILBOX: $FILEPATH >> $LOGFILE
 		fi
 
 		# Let's copy and finish to write the info before inserting into json
@@ -144,26 +154,34 @@ do
 		else
 			echo '}' >> ${JSONTMP}.${MAILBOX}
 		fi
-		RECIPIENTS=(${RECIPIENTS[@]:0:$index} ${RECIPIENTS[@]:$(($index + 1))})
-		((index--))
-
 		if [ ! -d ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/ ]
 		then
 			mkdir ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/
 			chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/
+			echo Created folder ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/ >> $LOGFILE
 		fi
+		
 		mv $FILELIST ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/${UNIXDATE}.${QUEUEID}
 		chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/${UNIXDATE}.${QUEUEID}
+
+		RECIPIENTS=(${RECIPIENTS[@]:0:$index} ${RECIPIENTS[@]:$(($index + 1))})
+		((RECINB--))
+		((index--))
 
 		sed -i "/\[/r ${JSONTMP}.${MAILBOX}" ${JFOLDER}inbox.json
 	done
 
-	if [ ${#RECIPIENTS[@]} -gt 0 ]
+	if [ $RECINB -gt 0 ]
 	then
-		sleep 20
-		((TIMEUP--))
+		sleep $SLEEPTIME
+		SLEEPTIME=$(($SLEEPTIME*2))
+		((RETRIES--))
+		if [ $RETRIES -eq 0 ]
+		then
+			echo Could not process mail $QUEUEID >> $LOGFILE
+		fi
 	else
-		TIMEUP=0
+		RETRIES=0
 	fi
 
 done
