@@ -9,7 +9,7 @@ JSONTMP=/tmp/newmail.json.$$
 USERDATA=/home/vmail/userdata/
 MAILBASE=/home/vmail/
 LOGFILE=/var/log/intimail/json_parser.log
-LOGFILE=/tmp/json_parser.log
+#LOGFILE=/tmp/json_parser.log
 MINSIZE=4
 RETRIES=8 # Number of retries
 SLEEPTIME=1
@@ -132,7 +132,7 @@ do
 		fi
 
 		#Try to get the filepath
-		FOLDERMAILBOX=${MAILBASE}${DOMAIN}/${MAILBOX}/
+		FOLDERMAILBOX=${MAILBASE}${DOMAIN}/${MAILBOX}/new/
 		FILELIST=`grep -rli $QUEUEID $FOLDERMAILBOX` || unset FILELIST
 		if [ -z "$FILELIST" -o `echo "$FILELIST" | wc -l` -ne 1 ]
 		then
@@ -158,7 +158,7 @@ do
 		then
 			mkdir ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/
 			chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/
-			echo Created folder ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/ >> $LOGFILE
+			echo Created directory ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/ >> $LOGFILE
 		fi
 		
 		mv $FILELIST ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/${UNIXDATE}.${QUEUEID}
