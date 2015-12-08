@@ -123,7 +123,7 @@ do
 
 		# GET THE ID MUDAFUGA
 		ID=`grep \"id\" ${JFOLDER}inbox.json | head -n 1 | sed 's/.*\"\([0-9]*\)\".*/\1/g'`
-		if [ -z "$ID" ]
+		if [ ! -z "$ID" ]
 		then
 			ID=$(($ID + 1))
 		else
@@ -138,7 +138,6 @@ do
 			echo Could not find mail with id $QUEUEID in $FOLDERMAILBOX >> $LOGFILE
 			continue
 		else
-			echo $FILELIST
 			FILEPATH=${FILELIST#$FOLDERMAILBOX}
 			echo Found mail with id $QUEUEID in $FOLDERMAILBOX: $FILEPATH >> $LOGFILE
 		fi

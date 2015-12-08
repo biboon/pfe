@@ -29,6 +29,6 @@ SENDER=$3
 $SENDMAIL -f $SENDER -- "${@:4}" < $INTMP || {
 	echo Sendmail failed exit code $?; exit $?; }
 
-nohup $PARSER "$@" < $INTMP
+nohup $PARSER "$@" < $INTMP >> /dev/null
 
 exit $?
