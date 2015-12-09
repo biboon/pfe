@@ -28,17 +28,15 @@ $IPT -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 #echo 'Accept traffic coming from the local network' $localnetwork
 #$IPT -A INPUT -i eth0 -s $localnetwork -j ACCEPT
 
-
-# Autoriser le loopback
-echo 'Allowing loopback interface...'
-$IPT -A INPUT -i lo -j ACCEPT
-
-
 while getopts ":b:w:" options
 do
 	case $options in
 		# Accept traffic from ip specified in whitelist
 		w)
+			# Autoriser le loopback
+			echo 'Allowing loopback interface...'
+			$IPT -A INPUT -i lo -j ACCEPT
+
 			WHITELIST=$OPTARG
 			echo 'Accepting traffic from ip specified in the whitelist'
 			while read line
@@ -51,7 +49,7 @@ do
 				fi
 			done < $WHITELIST
 			;;
-
+		
 		# Block traffic from ip specified in blacklist
 		b)
 			BLACKLIST=$OPTARG
