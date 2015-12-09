@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Simple json parser script
 # Supposed to be called by the filter.sh script
 # Current parameters $@ = $queue_id $size $sender $recipient
@@ -12,27 +11,25 @@ LOGFILE=/var/log/intimail/json_parser.log
 #LOGFILE=/tmp/json_parser.log
 MINSIZE=4
 RETRIES=8 # Number of retries
-SLEEPTIME=1
+SLEEPTIME=1 # Initial sleep time in seconds
 
 # Exit codes from <sysexits.h>
 EX_TEMPFAIL=75
 EX_UNAVAILABLE=69
 EX_CANTCREAT=73
 
-#touch /tmp/json_parser
-echo `date +%F%t%T%t` Starting json_parser using arguments: $@ >> $LOGFILE
+echo $$ >> /tmp/json_parser.pid
+echo `date +%F%t%T%t` Starting json_parser/pid:$$ using arguments: $@ >> $LOGFILE
 
 # Clean up when done or aborting
-trap "rm -f /tmp/*.$$.* /tmp/*.$$; echo `date +%F%t%T%t` json_parser exited with code $? >> $LOGFILE; exit $EX_TEMPFAIL" 0 1 2 3 15
+trap "rm -f /tmp/*.$$.* /tmp/*.$$ /tmp/json_parser.pid; echo `date +%F%t%T%t` json_parser exited with code $? >> $LOGFILE; exit $?" 0 1 2 3 15
 
+# Parse arguments
 QUEUEID=$1
-shift
-
-SIZE=$1
-shift
-
-FROM=$1
-shift
+SIZE=$2
+FROM=$3
+RECIPIENTS=("${@:4}")
+RECINB=${#RECIPIENTS[@]}
 
 cat > $INTMP || {
 	echo Cannot save mail to $INTMP >> $LOGFILE; exit $EX_TEMPFAIL; }
@@ -41,9 +38,7 @@ cat > $INTMP || {
 # Let's parse the data
 DATE=`date +%F\ %T`
 UNIXDATE=`date -d "$DATE" +%s`
-
-unset SUBJECT
-SUBJECT=`grep Subject: $INTMP | sed 's/Subject: \(.*\)/\1/'`
+SUBJECT=`grep Subject: $INTMP | sed 's/Subject: \(.*\)/\1/'` || unset SUBJECT
 if [ -z "$SUBJECT" ]
 then
 	SUBJECT="(No Subject)"
@@ -61,7 +56,7 @@ echo -e "\t\"queueid\": \"$QUEUEID\"," >> $JSONTMP
 echo -e "\t\"size\": \"$SIZE\"," >> $JSONTMP
 echo -e "\t\"status\": \"0\"," >> $JSONTMP
 echo -e "\t\"pj\": \"0\"," >> $JSONTMP
-echo Written temp file $JSONTMP >> $LOGFILE
+#echo Written temp file $JSONTMP >> $LOGFILE
 
 # Create the directory if it doesn't exist
 if [ ! -d $USERDATA ]
@@ -71,12 +66,7 @@ then
 	echo Created directory $USERDATA >> $LOGFILE
 fi
 
-
-# At this state, $@ is the array of recipient addresses
-# We copy all the recipients to another array
-RECIPIENTS=("$@")
-RECINB=${#RECIPIENTS[@]}
-
+# Start processing
 while [ $RETRIES -gt 0 ]
 do
 
@@ -131,16 +121,16 @@ do
 			ID=0
 		fi
 
-		#Try to get the filepath
+		# Try to get the filepath
 		FOLDERMAILBOX=${MAILBASE}${DOMAIN}/${MAILBOX}/new/
 		FILELIST=`grep -rli $QUEUEID $FOLDERMAILBOX` || unset FILELIST
 		if [ -z "$FILELIST" -o `echo "$FILELIST" | wc -l` -ne 1 ]
 		then
-			echo Could not find mail with id $QUEUEID in $FOLDERMAILBOX >> $LOGFILE
+#			echo Could not find mail with id $QUEUEID in $FOLDERMAILBOX >> $LOGFILE
 			continue
 		else
 			FILEPATH=${FILELIST#$FOLDERMAILBOX}
-			echo Found mail with id $QUEUEID in $FOLDERMAILBOX: $FILEPATH >> $LOGFILE
+#			echo Found mail with id $QUEUEID in $FOLDERMAILBOX: $FILEPATH >> $LOGFILE
 		fi
 
 		# Let's copy and finish to write the info before inserting into json
