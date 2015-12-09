@@ -8,7 +8,6 @@ JSONTMP=/tmp/newmail.json.$$
 USERDATA=/home/vmail/userdata/
 MAILBASE=/home/vmail/
 LOGFILE=/var/log/intimail/json_parser.log
-#LOGFILE=/tmp/json_parser.log
 MINSIZE=4
 RETRIES=8 # Number of retries
 SLEEPTIME=1 # Initial sleep time in seconds
@@ -103,7 +102,7 @@ do
 			echo Created directory $JFOLDER >> $LOGFILE
 		fi
 	
-		# Create inbox.json
+		# Create inbox.json if it doesn't exist
 		if [ ! -f ${JFOLDER}inbox.json ]
 		then
 			echo '[' >> ${JFOLDER}inbox.json
@@ -150,14 +149,24 @@ do
 			chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/
 			echo Created directory ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/ >> $LOGFILE
 		fi
-		
+
+		# Move the files and finish
 		mv $FILELIST ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/${UNIXDATE}.${QUEUEID}
 		chmod g=rwx ${USERDATA}${DOMAIN}/${MAILBOX}/inbox/${UNIXDATE}.${QUEUEID}
 
 		RECIPIENTS=(${RECIPIENTS[@]:0:$index} ${RECIPIENTS[@]:$(($index + 1))})
 		((RECINB--))
 		((index--))
-
+		
+		# Set the new value in quota.json
+		if [ -f ${JFOLDER}quota.json ]
+		then
+			SIZE=$(($SIZE + `cat ${JFOLDER}quota.json`))
+		fi
+		echo $SIZE > ${JFOLDER}quota.json
+		chmod g=rwx ${JFOLDER}quota.json
+		
+		# Insert new json info in main file
 		sed -i "/\[/r ${JSONTMP}.${MAILBOX}" ${JFOLDER}inbox.json
 	done
 
