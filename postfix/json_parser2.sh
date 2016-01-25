@@ -162,9 +162,11 @@ do
 		if [ -f ${JFOLDER}quota.json ]
 		then
 			SIZE=$(($SIZE + `cat ${JFOLDER}quota.json`))
+		else
+			touch ${JFOLDER}quota.json
+			chmod g=rwx ${JFOLDER}quota.json
 		fi
 		echo $SIZE > ${JFOLDER}quota.json
-		chmod g=rwx ${JFOLDER}quota.json
 		
 		# Insert new json info in main file
 		sed -i "/\[/r ${JSONTMP}.${MAILBOX}" ${JFOLDER}inbox.json
