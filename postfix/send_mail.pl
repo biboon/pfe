@@ -21,8 +21,8 @@ my $sender = $options{s};
 my $dest = $options{d};
 my $mailfile = $options{f};
 
-$sender =~ s/\@/\\\@/g;
-$dest =~ s/\@/\\\@/g;
+#$sender =~ s/\@/\\\@/g;
+#$dest =~ s/\@/\\\@/g;
 
 #--- Finished, sending mail ---#
 
