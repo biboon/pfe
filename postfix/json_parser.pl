@@ -6,9 +6,9 @@ my $USERDATA = "/home/vmail/userdata/";
 my $MAILBASE = "/home/vmail/";
 my $LOGFILE = "/var/log/intimail/json_parser.log";
 my $MINSIZE = 4;
-my $RETRIES = 8; # Number of retries
+my $RETRIES = 1; # Number of retries
 my $SLEEPTIME = 1; # Initial sleep time in seconds
-my $LDAPPW = `cat /etc/ldap/ldap.pw`;
+my $LDAPPW = `cat /etc/ldap/ldap.pw`; chomp $LDAPPW;
 
 # Exit codes from <sysexits.h>
 my $EX_TEMPFAIL = 75;
@@ -60,6 +60,33 @@ print $jsontmpd "\t\"pj\": \"0\",\n";
 while ($RETRIES > 0 && scalar @recipients > 0) {
 	foreach $address (@recipients) {
 		print $logfiled "Doing recipient $address\n";
+	
+		my $tmp = $address;
+		my ($mailbox, $domaintld) = ($tmp =~ m/([^@]+)@([^@]+)/);
+		my ($domain, $tld) = ($domaintld =~ m/([^\.]+)\.([^\.]+)/);
+
+		# Create user folders if needed userdata/domain.tld/
+		my $JSONFOLDER = "$USERDATA$domaintld/$mailbox/json/";
+		#  userdata/domain.tld/mailbox/json/
+		# Create initial json file if doesn't exist
+		
+		# Get quota levels
+		my $quota = `ldapsearch -D \"cn=admin,dc=$domain,dc=$tld\" -w $LDAPPW -b \"dc=people,dc=mail,dc=$domain,dc=$tld\" \"(mail=$address)\" | grep quota`;
+		($quota) = ($quota =~ m/\D*(\d*)/);
+		my $usedquota = `cat ${JSONFOLDER}quota.json`; chomp $usedquota;
+		
+		$size = $size + $usedquota;
+		if ($size < $quota) { # There is enough space available, process mail
+			open(my $quotajson, '>', "${JSONFOLDER}quota.json") or die;
+			print $quotajson "$size";
+			close $quotajson;
+
+			# Get the ID
+			my $id = `grep \\"id\\" ${JSONFOLDER}inbox.json | head -n 1`;
+			$id = ($id =~ m/\D*(\d*).*/) ? $1 + 1 : 0;
+
+			
+		}
 	}
 
 	$RETRIES--;
