@@ -1,42 +1,8 @@
 #!/usr/bin/perl
 
 use File::Copy;
-use File::Basename;
+use Intimail;
 
-# ----
-
-# Works like the mkdir -p bash command, with a permission parameter
-sub mkdirp ($$) {
-	my ($dir, $perm) = (@_);
-	return if (-d $dir);
-	mkdirp(dirname($dir), $perm);
-	my $old = umask;
-	umask 0000;
-	mkdir $dir, oct($perm);
-	umask $old;
-}
-
-# Deletes a directory and all its content, like rm -r
-# The path needs a trailing /, otherwise there will be strange behaviour
-sub deldir ($) {
-	my $dir = shift;
-	chop $dir;
-	opendir(my $dirfh, $dir) or die "Cannot open directory $dir\n";
-	my @files = readdir $dirfh;
-	foreach my $file( @files ) {
-		chomp($file);
-		if (not($file eq ".." || $file eq ".")) {
-			if (-d "$dir/$file") {
-				deldir("$dir/$file");
-			} else {
-				unlink "$dir/$file";
-			}
-		}
-	}
-	closedir $dirfh;
-	rmdir $dir;
-}
-																														
 # ----
 
 # Some variables
@@ -52,11 +18,6 @@ my $RETRIES = 6; # Number of retries
 my $SLEEPTIME = 1; # Initial sleep time in seconds
 my $LDAPPW = `cat /etc/ldap/ldap.pw`; chomp $LDAPPW;
 
-# Exit codes from <sysexits.h>
-my $EX_TEMPFAIL = 75;
-my $EX_UNAVAILABLE = 69;
-my $EX_CANTCREAT = 73;
-
 # Parse some arguments
 my $queueid = $ARGV[0];
 my $size = $ARGV[1];
@@ -68,12 +29,11 @@ foreach $argnum (3 .. $#ARGV) {
 	push @recipients, $ARGV[$argnum];
 }
 
-# Open some files
+# Open log file
 open(my $logfiled, '>>', $LOGFILE) or die "Could not open file $LOGFILE\n";
-open(my $jsontmpd, '>', $JSONTMP) or die "Could not open file $JSONTMP\n";
-open(my $intmpd, '>', $INTMP) or die "Could not open file $INTMP\n";
 
 # Get stdin to tmp file
+open(my $intmpd, '>', $INTMP) or die "Could not open file $INTMP\n";
 while (<STDIN>) { print $intmpd $_; }
 close $intmpd;
 
@@ -86,6 +46,7 @@ if (not(defined $subject and length $subject)) { $subject = "(No Subject)"; }
 print $logfiled "$date Starting json_parser/pid:$$\n";
 
 # Writing the base of the new json info
+open(my $jsontmpd, '>', $JSONTMP) or die "Could not open file $JSONTMP\n";
 print $jsontmpd "\t\"from\": \"$from\",\n";
 print $jsontmpd "\t\"subject\": \"$subject\",\n";
 print $jsontmpd "\t\"timestamp\": \"$date\",\n";
@@ -220,7 +181,7 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 close $logfiled;
 
 # Remove temporary files
-unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox; # Gotta remove MIMETMP/ here
-deldir $MIMETMP;
+#unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox; # Gotta remove MIMETMP/ here
+#deldir $MIMETMP;
 
 exit 0;
