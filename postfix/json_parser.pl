@@ -17,10 +17,10 @@ sub mkdirp ($$) {
 }
 
 # Deletes a directory and all its content, like rm -r
-# Do not set the final / at the end of the folder to remove
-# deldir("/path/to/folder"); like this
+# The path needs a trailing /, otherwise there will be strange behaviour
 sub deldir ($) {
 	my $dir = shift;
+	chop $dir;
 	opendir(my $dirfh, $dir) or die "Cannot open directory $dir\n";
 	my @files = readdir $dirfh;
 	foreach my $file( @files ) {
@@ -164,7 +164,6 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 						}
 					}
 				}
-				deldir $MIMETMP;
 
 				# Let's finish writing json temporary file
 				open(my $jsonmlbx, '<', "${JSONFOLDER}inbox.json") or die "Could not open file ${JSONFOLDER}inbox.json\n";
@@ -221,6 +220,7 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 close $logfiled;
 
 # Remove temporary files
-unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox; # Gotta remove MIMETMP/ here
+#unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox; # Gotta remove MIMETMP/ here
+#deldir $MIMETMP;
 
 exit 0;
