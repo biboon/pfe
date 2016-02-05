@@ -220,7 +220,7 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 close $logfiled;
 
 # Remove temporary files
-#unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox; # Gotta remove MIMETMP/ here
-#deldir $MIMETMP;
+unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox; # Gotta remove MIMETMP/ here
+deldir $MIMETMP;
 
 exit 0;
