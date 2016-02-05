@@ -23,6 +23,7 @@ my $INTMP = "/tmp/in.$$";
 my $JSONTMP = "/tmp/newmail.json.$$";
 my $USERDATA = "/home/vmail/userdata/";
 my $MAILBASE = "/home/vmail/";
+my $MIMETMP = "/tmp/mime/";
 my $LOGFILE = "/var/log/intimail/json_parser.log";
 my $EXECFOLDER = "/home/moth/Documents/pfe/postfix/";
 my $MINSIZE = 4;
@@ -70,8 +71,7 @@ print $jsontmpd "\t\"timestamp\": \"$date\",\n";
 print $jsontmpd "\t\"unixtimestamp\": \"$unixdate\",\n";
 print $jsontmpd "\t\"queueid\": \"$queueid\",\n";
 print $jsontmpd "\t\"size\": \"$size\",\n";
-print $jsontmpd "\t\"status\": \"0\",\n";
-print $jsontmpd "\t\"pj\": \"0\",\n";
+print $jsontmpd "\t\"status\": \"0\"\n";
 close $jsontmpd;
 
 # Create some folders
@@ -115,9 +115,34 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 
 				# Get the ID
 				my $id = `grep \\"id\\" ${JSONFOLDER}inbox.json | head -n 1`;
-				print $logfiled "Got id $id\n";
 				$id = (length $id && $id =~ m/\D*(\d*).*/) ? $1 + 1 : 0;
-				print $logfiled "Using id \#$id\n";
+
+				# Parse the MIME file received to extract attachments
+				mkdirp($MIMETMP, "0777");
+				move($filelist, "$MIMETMP/$unixdate.$queueid");
+				my $munpack = `munpack -t -C $MIMETMP $unixdate.$queueid`;
+				my @lines = split /\n/, $munpack;
+				my $misshtml = 1; my $pj = 0;
+				foreach my $line( @lines ) {
+					my ($mimefile, $mimetype);
+					if ($line =~ m/([^ ]*) \((.*)\)/) { # Get the file and the type
+						$mimefile = $1;
+						$mimetype = $2;
+						print $logfiled "Processing file $line > $MIMETMP$mimefile $mimetype\n";
+						chmod 0770, "$MIMETMP$mimefile";
+						if ($mimetype =~ m/text\/plain/ && $misshtml) { # Get plain text format unless we have html
+							move("$MIMETMP$mimefile", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid");
+						} elsif ($mimetype =~ m/text\/html/) { # Get html file
+							move("$MIMETMP$mimefile", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid");
+							$misshtml = 0;
+						} else { # Get other files (attachments)
+							my $pjfld = "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/";
+							if (not -d $pjfld) { mkdirp($pjfld, "0770"); }
+							move("$MIMETMP$mimefile", "$pjfld$mimefile");
+							$pj++;
+						}
+					}
+				}
 
 				# Let's finish writing json temporary file
 				open(my $jsonmlbx, '<', "${JSONFOLDER}inbox.json") or die "Could not open file ${JSONFOLDER}inbox.json\n";
@@ -130,7 +155,8 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 					if ($_ eq "[\n") {
 						print $jsonmlbxtmp "{\n";
 						print $jsonmlbxtmp "\t\"id\": \"$id\",\n";
-						print $jsonmlbxtmp "\t\"to\": \"$address\"\n";
+						print $jsonmlbxtmp "\t\"to\": \"$address\",\n";
+						print $jsonmlbxtmp "\t\"pj\": \"$pj\",\n";
 						while (<$jsontmpd>) {
 							print $jsonmlbxtmp $_;
 						}
@@ -148,7 +174,6 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 				if (not -d "$USERDATA$domaintld/$mailbox/inbox/") {
 					mkdirp("$USERDATA$domaintld/$mailbox/inbox/", "0770");
 				}
-				move($filelist, "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid");
 				chmod 0770, "${JSONFOLDER}inbox.json", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid";
 
 			} else { # There is not enough space, we delete the file
@@ -174,6 +199,6 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 close $logfiled;
 
 # Remove temporary files
-unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox;
+unlink $JSONTMP, $INTMP, $JSONTMP.$mailbox; # Gotta remove MIMETMP/ here
 
 exit 0;
