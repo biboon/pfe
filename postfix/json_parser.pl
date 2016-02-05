@@ -16,6 +16,27 @@ sub mkdirp ($$) {
 	umask $old;
 }
 
+# Deletes a directory and all its content, like rm -r
+# Do not set the final / at the end of the folder to remove
+# deldir("/path/to/folder"); like this
+sub deldir ($) {
+	my $dir = shift;
+	opendir(my $dirfh, $dir) or die "Cannot open directory $dir\n";
+	my @files = readdir $dirfh;
+	foreach my $file( @files ) {
+		chomp($file);
+		if (not($file eq ".." || $file eq ".")) {
+			if (-d "$dir/$file") {
+				deldir("$dir/$file");
+			} else {
+				unlink "$dir/$file";
+			}
+		}
+	}
+	closedir $dirfh;
+	rmdir $dir;
+}
+																														
 # ----
 
 # Some variables
@@ -143,6 +164,7 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 						}
 					}
 				}
+				deldir $MIMETMP;
 
 				# Let's finish writing json temporary file
 				open(my $jsonmlbx, '<', "${JSONFOLDER}inbox.json") or die "Could not open file ${JSONFOLDER}inbox.json\n";
