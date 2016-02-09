@@ -3,9 +3,10 @@
 package Intimail;
 use Exporter;
 @ISA = ('Exporter');
-@EXPORT = ('mkdirp', 'deldir', 'findptrn');
+@EXPORT = ('mkdirp', 'deldir', 'findptrn', 'parsemime');
 
 use File::Basename;
+use File::Copy;
 
 # Works like the mkdir -p bash command, with a permission parameter
 sub mkdirp ($$) {
@@ -45,6 +46,37 @@ sub findptrn ($$) {
 		push @res, $_ if (index($_, $pattern) != -1);
 	}
 	return @res;
+}
+
+# Parses the mime type file and sets data in the /tmp/mime.$$/ folder
+sub parsemime ($$) {
+	my ($file, $MIME) = (@_);
+	my @parts = ();
+	my $OUTFLD = "${MIME}out/";
+	my $MUNPACK = `which munpack`; chomp $MUNPACK;
+
+	mkdir $MIME;
+	mkdir $OUTFLD;
+	move($file, "${MIME}mime");
+	my $unpack = `$MUNPACK -t -C $MIME mime`;
+	my @lines = split /\n/, $unpack;
+	my $misshtml = 1;
+	foreach my $line( @lines ) {
+		if ($line =~ m/([^ ]*) \((.*)\)/) { # Get the file and the type
+			my ($mfile, $mtype) = ($1, $2);
+			chmod 0660, "$MIME$mfile";
+			if ($mtype =~ m/text\/plain/ && $misshtml) { # Get plain text format unless we have html
+				move("$MIME$mfile", "${OUTFLD}msg");
+			} elsif ($mtype =~ m/text\/html/) { # Get html file
+				move("$MIME$mfile", "${OUTFLD}msg");
+				$misshtml = 0;
+			} else { # Get other files (attachments)
+				move("$MIME$mfile", "${OUTFLD}$mfile");
+				push @parts, $mfile;
+			}
+		}
+	}
+	return @parts;
 }
 
 1;

@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use lib "/home/moth/Documents/pfe/postfix";
+
 use File::Copy;
 use Intimail;
 
@@ -8,9 +10,9 @@ use Intimail;
 # Some variables
 my $INTMP = "/tmp/in.$$";
 my $JSONTMP = "/tmp/newmail.json.$$";
-my $USERDATA = "/home/vmail/userdata/";
-my $MAILBASE = "/home/vmail/";
-my $MIMETMP = "/tmp/mime/";
+my $VMAIL = "/home/vmail/";
+my $USERDATA = "${VMAIL}userdata/";
+my $MIMETMP = "/tmp/mime.$$/";
 my $LOGFILE = "/var/log/intimail/json_parser.log";
 my $EXECFOLDER = "/home/moth/Documents/pfe/postfix/";
 my $MINSIZE = 4;
@@ -56,8 +58,8 @@ print $jsontmpd "\t\"size\": \"$size\",\n";
 print $jsontmpd "\t\"status\": \"0\"\n";
 close $jsontmpd;
 
-# Create some folders
-#  Create usedata folder with right permissions
+# Process mail
+my @attachments = parsemime($INTMP, $MIMETMP);
 
 while ($RETRIES > 0 && scalar @recipients > 0) {
 	
@@ -77,7 +79,7 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 		}
 
 		# Get the original mail file path
-		my $MAILBOXFOLDER = "$MAILBASE$domaintld/$mailbox/new/";
+		my $MAILBOXFOLDER = "$VMAIL$domaintld/$mailbox/new/";
 		my $filelist = `grep -rli $queueid $MAILBOXFOLDER`; chomp $filelist;
 		if (length $filelist && `echo "$filelist" | wc -l` == 1) {
 		
@@ -93,38 +95,11 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 				open(my $quotajson, '>', "${JSONFOLDER}quota.json") or die "Could not open file ${JSONFOLDER}quota.json\n";
 				print $quotajson "$size";
 				close $quotajson;
-				chmod 0770, "${JSONFOLDER}quota.json";
+				chmod 0660, "${JSONFOLDER}quota.json";
 
 				# Get the ID
-				my $id = `grep \\"id\\" ${JSONFOLDER}inbox.json | head -n 1`;
+				my $id = (findptrn("${JSONFOLDER}inbox.json", "\"id\""))[0];
 				$id = (length $id && $id =~ m/\D*(\d*).*/) ? $1 + 1 : 0;
-
-				# Parse the MIME file received to extract attachments
-				mkdirp($MIMETMP, "0777");
-				move($filelist, "$MIMETMP/$unixdate.$queueid");
-				my $munpack = `munpack -t -C $MIMETMP $unixdate.$queueid`;
-				my @lines = split /\n/, $munpack;
-				my $misshtml = 1; my $pj = 0;
-				foreach my $line( @lines ) {
-					my ($mimefile, $mimetype);
-					if ($line =~ m/([^ ]*) \((.*)\)/) { # Get the file and the type
-						$mimefile = $1;
-						$mimetype = $2;
-						print $logfiled "Processing file $line > $MIMETMP$mimefile $mimetype\n";
-						chmod 0770, "$MIMETMP$mimefile";
-						if ($mimetype =~ m/text\/plain/ && $misshtml) { # Get plain text format unless we have html
-							move("$MIMETMP$mimefile", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid");
-						} elsif ($mimetype =~ m/text\/html/) { # Get html file
-							move("$MIMETMP$mimefile", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid");
-							$misshtml = 0;
-						} else { # Get other files (attachments)
-							my $pjfld = "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/";
-							if (not -d $pjfld) { mkdirp($pjfld, "0770"); }
-							move("$MIMETMP$mimefile", "$pjfld$mimefile");
-							$pj++;
-						}
-					}
-				}
 
 				# Let's finish writing json temporary file
 				open(my $jsonmlbx, '<', "${JSONFOLDER}inbox.json") or die "Could not open file ${JSONFOLDER}inbox.json\n";
@@ -139,9 +114,7 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 						print $jsonmlbxtmp "\t\"id\": \"$id\",\n";
 						print $jsonmlbxtmp "\t\"to\": \"$address\",\n";
 						print $jsonmlbxtmp "\t\"pj\": \"$pj\",\n";
-						while (<$jsontmpd>) {
-							print $jsonmlbxtmp $_;
-						}
+						print $jsonmlbxtmp $_ while (<$jsontmpd>);
 						print $jsonmlbxtmp (($id != 0) ? "},\n" : "}\n");
 					}
 				}
@@ -152,11 +125,23 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 
 				# Move json and mail files to the userdata folder and set permissions
 				move("$JSONTMP.$mailbox", "${JSONFOLDER}inbox.json");
+				chmod 0660, "${JSONFOLDER}inbox.json";
+
 				# Create inbox folder if necessary
 				if (not -d "$USERDATA$domaintld/$mailbox/inbox/") {
 					mkdirp("$USERDATA$domaintld/$mailbox/inbox/", "0770");
 				}
-				chmod 0770, "${JSONFOLDER}inbox.json", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid";
+
+				# Copy files to user folder
+				copy("${MIMETMP}/out/msg", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid");
+				chmod 0660, "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid";
+				if (scalar @attachments > 0) {
+					mkdirp("$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/", "0770");
+				}
+				foreach my $attach( @attachments ) {
+					copy("${MIMETMP}/out/$attach", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/$attach");
+					chmod 0660, "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/$attach";
+				}
 
 			} else { # There is not enough space, we delete the file
 				print $logfiled "Not enough space, removing $filelist\n";
