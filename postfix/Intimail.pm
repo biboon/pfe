@@ -55,10 +55,8 @@ sub parsemime ($$) {
 	my $OUTFLD = "${MIME}out/";
 	my $MUNPACK = `which munpack`; chomp $MUNPACK;
 
-	mkdir $MIME;
 	mkdir $OUTFLD;
-	move($file, "${MIME}mime");
-	my $unpack = `$MUNPACK -t -C $MIME mime`;
+	my $unpack = `$MUNPACK -t -C $MIME $file`;
 	my @lines = split /\n/, $unpack;
 	my $misshtml = 1;
 	foreach my $line( @lines ) {
