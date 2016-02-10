@@ -79,15 +79,14 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 		}
 
 		# Get the original mail file path
-		my $MAILBOXFOLDER = "$VMAIL$domaintld/$mailbox/new/";
-		my $filelist = `grep -rli $queueid $MAILBOXFOLDER`; chomp $filelist;
-		if (length $filelist && `echo "$filelist" | wc -l` == 1) {
+		my $NEWFLD = "$VMAIL$domaintld/$mailbox/new/";
+		my $filelist = `grep -rli $queueid $NEWFLD`; chomp $filelist;
+		if (length $filelist && `echo "$filelist" | wc -l` == 1) { # A mail file was found
 		
 			# Get quota levels
 			my $quota = `ldapsearch -D \"cn=admin,dc=$domain,dc=$tld\" -w $LDAPPW -b \"dc=people,dc=mail,dc=$domain,dc=$tld\" \"(mail=$address)\" | grep quota`;
 			($quota) = ($quota =~ m/\D*(\d*)/);
-			my $usedquota = (-e "${JSONFOLDER}quota.json") ? `cat ${JSONFOLDER}quota.json` : 0;
-			chomp $usedquota;
+			my $usedquota = (-e "${JSONFOLDER}quota.json") ? `cat ${JSONFOLDER}quota.json` : 0; chomp $usedquota;
 
 			# Check if there is enough space
 			$size = $size + $usedquota;
@@ -119,35 +118,32 @@ while ($RETRIES > 0 && scalar @recipients > 0) {
 					}
 				}
 
-				close $jsonmlbx;
-				close $jsontmpd;
-				close $jsonmlbxtmp;
+				close $jsonmlbx; close $jsontmpd; close $jsonmlbxtmp;
 
 				# Move json and mail files to the userdata folder and set permissions
 				move("$JSONTMP.$mailbox", "${JSONFOLDER}inbox.json");
 				chmod 0660, "${JSONFOLDER}inbox.json";
 
 				# Create inbox folder if necessary
-				if (not -d "$USERDATA$domaintld/$mailbox/inbox/") {
-					mkdirp("$USERDATA$domaintld/$mailbox/inbox/", "0770");
-				}
+				my $INBOXFLD = "$USERDATA$domaintld/$mailbox/inbox/";
+				mkdirp($INBOXFLD, "0770") if (not -d $INBOXFLD);
 
 				# Copy files to user folder
-				copy("${MIMETMP}/out/msg", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid");
-				chmod 0660, "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid";
-				if (scalar @attachments > 0) {
-					mkdirp("$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/", "0770");
-				}
+				copy("${MIMETMP}/out/msg", "$INBOXFLD$unixdate.$queueid");
+				chmod 0660, "$INBOXFLD$unixdate.$queueid";
+				mkdirp("$INBOXFLD$unixdate.$queueid.pj/", "0770") if (scalar @attachments > 0);
 				foreach my $attach( @attachments ) {
-					copy("${MIMETMP}/out/$attach", "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/$attach");
-					chmod 0660, "$USERDATA$domaintld/$mailbox/inbox/$unixdate.$queueid.pj/$attach";
+					copy("${MIMETMP}/out/$attach", "$INBOXFLD$unixdate.$queueid.pj/$attach");
+					chmod 0660, "$INBOXFLD$unixdate.$queueid.pj/$attach";
 				}
 
 			} else { # There is not enough space, we delete the file
 				print $logfiled "Not enough space, removing $filelist\n";
-				unlink $filelist;
 			}
 	
+			# Finished processing mail file, deleting
+			unlink $filelist;
+
 			# Remove the processed address from the recipient list
 			splice(@recipients, $index, 1);
 			$index--;

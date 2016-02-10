@@ -17,9 +17,10 @@ EX_UNAVAILABLE=69
 
 #touch /tmp/filter
 #whoami >> /tmp/filter
+echo "Started smtp_filter/$$ script with $@" >> $LOGFILE
 
 # Clean up when done or aborting
-trap "rm -f /tmp/*.$$" 0 1 2 3 15
+#trap "rm -f /tmp/*.$$" 0 1 2 3 15
 
 # Start processing
 cat > $INTMP || {
@@ -32,6 +33,6 @@ SENDER=$3
 $SENDMAIL -f $SENDER -- "${@:4}" < $INTMP || {
 	echo Sendmail failed exit code $? >> $LOGFILE; exit $?; }
 
-nohup $PARSER "$@" < $INTMP & >> $LOGFILE;
+#nohup $PARSER "$@" < $INTMP & >> $LOGFILE;
 
 exit $?
