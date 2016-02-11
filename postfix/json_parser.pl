@@ -143,10 +143,10 @@ for my $index (0 .. $#recipients) {
 	$index--;
 }
 
+# Remove temporary files
+deldir ($TMPFLD, $logfiled);
+
 # Close files
 close $logfiled;
-
-# Remove temporary files
-#deldir $TMPFLD;
 
 exit 0;

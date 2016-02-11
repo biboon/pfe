@@ -20,10 +20,9 @@ sub mkdirp ($$) {
 }
 
 # Deletes a directory and all its content, like rm -r
-# The path needs a trailing /, otherwise there will be strange behaviour
-sub deldir ($) {
+sub deldir ($$) {
     my $dir = shift;
-    chop $dir;
+    chop $dir if (substr($dir, -1) eq "/");
     opendir(my $dirfh, $dir) or die "Cannot open directory $dir\n";
     my @files = readdir $dirfh;
     foreach my $file( @files ) {
