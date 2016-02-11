@@ -43,11 +43,8 @@ close $intmpd;
 # Let's get some info to write in the json file
 my $date = `date +%F\\ %T`;
 my $unixdate = `date -d \"$date\" +%s`;
-#my $subject = `grep Subject: $INTMP | sed 's/Subject: \\(.*\\)/\\1/'`;
 my $subject = (findptrn($INTMP, "Subject:"))[0];
-print $logfiled "ph1: $subject\n";
 ($subject) = ($subject =~ m/Subject: (.*)/);
-print $logfiled "ph2: $subject\n";
 chomp $date; chomp $unixdate; chomp $subject;
 $subject = "(No Subject)" if (not(defined $subject and length $subject));
 print $logfiled "$date Starting json_parser/pid:$$\n";
@@ -97,6 +94,9 @@ for my $index (0 .. $#recipients) {
 		# Get the ID
 		my $id = (findptrn("${JSONFOLDER}inbox.json", "\"id\""))[0];
 		$id = (length $id && $id =~ m/\D*(\d*).*/) ? $1 + 1 : 0;
+		
+		# Attachments number
+		my $pj = scalar @attachments;
 
 		# Let's finish writing json temporary file
 		open(my $jsonmlbx, '<', "${JSONFOLDER}inbox.json") or die "Could not open file ${JSONFOLDER}inbox.json\n";
@@ -110,7 +110,7 @@ for my $index (0 .. $#recipients) {
 				print $jsonmlbxtmp "{\n";
 				print $jsonmlbxtmp "\t\"id\": \"$id\",\n";
 				print $jsonmlbxtmp "\t\"to\": \"$address\",\n";
-				print $jsonmlbxtmp "\t\"pj\": \"$#attachments\",\n";
+				print $jsonmlbxtmp "\t\"pj\": \"$pj\",\n";
 				print $jsonmlbxtmp $_ while (<$jsontmpd>);
 				print $jsonmlbxtmp (($id != 0) ? "},\n" : "}\n");
 			}
@@ -128,7 +128,7 @@ for my $index (0 .. $#recipients) {
 		# Copy files to user folder
 		copy("${TMPFLD}/out/msg", "$INBOXFLD$unixdate.$queueid");
 		chmod 0660, "$INBOXFLD$unixdate.$queueid";
-		mkdirp("$INBOXFLD$unixdate.$queueid.pj/", "0770") if (scalar @attachments > 0);
+		mkdirp("$INBOXFLD$unixdate.$queueid.pj/", "0770") if ($pj > 0);
 		foreach my $attach( @attachments ) {
 			copy("${TMPFLD}/out/$attach", "$INBOXFLD$unixdate.$queueid.pj/$attach");
 			chmod 0660, "$INBOXFLD$unixdate.$queueid.pj/$attach";
@@ -147,6 +147,6 @@ for my $index (0 .. $#recipients) {
 close $logfiled;
 
 # Remove temporary files
-#deldir $MIMETMP;
+#deldir $TMPFLD;
 
 exit 0;
