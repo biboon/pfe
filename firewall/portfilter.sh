@@ -45,12 +45,12 @@ echo 'Allowing SMTP connexions ('$SMTP_PORT')...'
 $IPT -A INPUT -p tcp --dport $SMTP_PORT -j ACCEPT
 
 # POP3
-echo 'Allowing POP3 connexions ('$POP3_PORT')...'
-iptables -t filter -A INPUT -p tcp --dport $POP3_PORT -j ACCEPT
+#echo 'Allowing POP3 connexions ('$POP3_PORT')...'
+#iptables -t filter -A INPUT -p tcp --dport $POP3_PORT -j ACCEPT
 
 # IMAP
-echo 'Allowing IMAP connexions ('$IMAP_PORT')...'
-iptables -t filter -A INPUT -p tcp --dport $IMAP_PORT -j ACCEPT
+#echo 'Allowing IMAP connexions ('$IMAP_PORT')...'
+#iptables -t filter -A INPUT -p tcp --dport $IMAP_PORT -j ACCEPT
 
 # DDOS Protection
 echo 'Enforcing DDOS Protection...\n'
