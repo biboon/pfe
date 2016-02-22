@@ -47,7 +47,9 @@ my $subject = (findptrn($INTMP, "Subject:"))[0];
 ($subject) = ($subject =~ m/Subject: (.*)/);
 chomp $date; chomp $unixdate; chomp $subject;
 $subject = "(No Subject)" if (not(defined $subject and length $subject));
-print $logfiled "$date Starting json_parser/pid:$$\n";
+print $logfiled "$date Starting json_parser/pid:$$";
+foreach $arg( @ARGV ) { print $logfiled " $arg"; }
+print $logfiled "\n";
 
 # Writing the base of the new json info
 open(my $jsontmpd, '>', $JSONTMP) or die "Could not open file $JSONTMP\n";
@@ -63,8 +65,8 @@ close $jsontmpd;
 # Process mail
 my @attachments = parsemime($INTMP, $TMPFLD);
 
-for my $index (0 .. $#recipients) {
-	my $address = $recipients[$index];
+foreach $address( @recipients ) {
+
 	print $logfiled "Doing recipient $address\n";
 
 	my $tmp = $address;
@@ -138,9 +140,6 @@ for my $index (0 .. $#recipients) {
 		print $logfiled "Not enough space, removing $filelist\n";
 	}
 
-	# Remove the processed address from the recipient list
-	splice(@recipients, $index, 1);
-	$index--;
 }
 
 # Remove temporary files
